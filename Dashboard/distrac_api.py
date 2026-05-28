@@ -1460,9 +1460,9 @@ def departure_stn_panel(
     org: str, repo: str, dev_id: str,
     date: Optional[str] = None, window_days: int = 30,
 ):
-    ext_dir = str(ROOT / "Extractors")
-    if ext_dir not in sys.path:
-        sys.path.insert(0, ext_dir)
+    for _d in (str(ROOT / "Analysis"), str(ROOT / "Dashboard"), str(ROOT / "Extractors")):
+        if _d not in sys.path:
+            sys.path.insert(0, _d)
     try:
         from SocialTechnicalNetworkV2 import get_html_for_streamlit
     except ImportError:

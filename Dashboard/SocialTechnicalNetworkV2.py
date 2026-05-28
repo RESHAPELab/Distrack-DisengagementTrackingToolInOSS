@@ -4,7 +4,7 @@
 
 
 ### IMPORT EXCEPTION MODULES
-from turtle import distance, pd
+import pandas as pd
 import uuid
 from requests.exceptions import Timeout
 from github import GithubException, UnknownObjectException, IncompletableObject
