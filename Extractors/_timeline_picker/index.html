@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 6px 2px 4px;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    font-size: 12px; background: transparent;
+  }
+  .header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .title  { font-size: 13px; font-weight: 600; color: #1a1917; }
+  .hint   { font-size: 10px; color: #9ca3af; }
+  .stats  { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 10px; }
+  .stat   { background: rgba(0,0,0,0.04); border-radius: 6px; padding: 6px 10px; }
+  .stat-label { font-size: 10px; color: #888; margin-bottom: 2px; }
+  .stat-value { font-size: 12px; font-weight: 600; color: #1a1917; }
+  #loading { font-size: 11px; color: #9ca3af; padding: 12px 0; text-align: center; }
+</style>
+</head>
+<body>
+<div class="header">
+  <span class="title">Commit Timeline</span>
+  <span class="hint">drag the brush below to set snapshot &amp; window</span>
+</div>
+<div id="chart-container"><div id="loading">Loading chart…</div></div>
+<div class="stats">
+  <div class="stat"><div class="stat-label">window start</div>
+    <div class="stat-value" id="min-date-out">—</div></div>
+  <div class="stat"><div class="stat-label">snapshot (end date)</div>
+    <div class="stat-value" id="max-date-out">—</div></div>
+  <div class="stat"><div class="stat-label">window (days)</div>
+    <div class="stat-value" id="window-days-out">—</div></div>
+</div>
+
+<!-- ── Phase 1: signal componentReady BEFORE loading any external scripts ── -->
+<script>
+  // Send ready immediately so Streamlit does not time out while D3 loads.
+  window.parent.postMessage({ type: "streamlit:componentReady", apiVersion: 1 }, "*");
+
+  var _renderArgs = null;   // set when Streamlit fires the render event
+  var _chartBuilt = false;  // guard: only build once
+
+  function _sendValue(val) {
+    window.parent.postMessage(
+      { type: "streamlit:setComponentValue", value: val, dataType: "json" }, "*"
+    );
+  }
+  function _sendHeight() {
+    window.parent.postMessage(
+      { type: "streamlit:setFrameHeight", height: document.body.scrollHeight + 12 }, "*"
+    );
+  }
+
+  // Receive the render event from Streamlit host
+  window.addEventListener("message", function(evt) {
+    if (!evt.data || evt.data.type !== "streamlit:render") return;
+    _renderArgs = evt.data.args || {};
+    _sendHeight();
+    _tryBuild();  // build if D3 already arrived
+  });
+
+  // Called from D3 onload AND from the message handler above
+  function _tryBuild() {
+    if (_chartBuilt || !_renderArgs || typeof d3 === "undefined") return;
+    _chartBuilt = true;
+    document.getElementById("loading").style.display = "none";
+    buildChart(
+      _renderArgs.commits       || [],
+      _renderArgs.default_date,
+      _renderArgs.default_window || 30
+    );
+  }
+</script>
+
+<!-- ── Phase 2: load D3, call _tryBuild() when done ── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"
+        onload="_tryBuild()"
+        onerror="document.getElementById('loading').textContent='D3 failed to load — check network.'">
+</script>
+
+<!-- ── Phase 3: chart code (uses D3, defined regardless of load order) ── -->
+<script>
+function buildChart(commits, defaultDate, defaultWindow) {
+  var container = document.getElementById("chart-container");
+
+  var data = commits
+    .map(function(d) { return { date: d3.timeParse("%Y-%m-%d")(d.date), count: +d.count }; })
+    .filter(function(d) { return d.date != null; });
+  data.sort(function(a, b) { return a.date - b.date; });
+
+  if (!data.length) {
+    container.innerHTML = "<p style='color:#9ca3af;text-align:center;padding:16px 0;font-size:11px;'>No commit history available.</p>";
+    _sendValue({ selected_date: defaultDate, window_days: defaultWindow });
+    _sendHeight();
+    return;
+  }
+
+  var fmtDate    = d3.timeFormat("%Y-%m-%d");
+  var fmtDisplay = d3.timeFormat("%b %d, %Y");
+
+  var W        = container.getBoundingClientRect().width || 560;
+  var margin   = { top: 8, right: 10, bottom: 18, left: 32 };
+  var focusH   = 100;
+  var contextH = 38;
+  var gap      = 14;
+  var innerW   = W - margin.left - margin.right;
+  var totalH   = margin.top + focusH + gap + contextH + margin.bottom;
+
+  var xFull = d3.scaleTime()
+    .domain(d3.extent(data, function(d) { return d.date; }))
+    .range([0, innerW]);
+  var xFocus  = d3.scaleTime().range([0, innerW]);
+  var maxCnt  = d3.max(data, function(d) { return d.count; }) || 1;
+  var yFull   = d3.scaleLinear().domain([0, maxCnt]).range([contextH, 0]);
+  var yFocus  = d3.scaleLinear().range([focusH, 0]);
+
+  var svg = d3.select(container).append("svg")
+    .attr("width", W).attr("height", totalH);
+
+  var focusG   = svg.append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  var contextG = svg.append("g")
+    .attr("transform", "translate(" + margin.left + "," + (margin.top + focusH + gap) + ")");
+
+  var barColor  = "#0F6E56";
+  var gridColor = "rgba(0,0,0,0.06)";
+  var snapColor = "#e74c3c";
+  var barW      = Math.max(1, innerW / data.length * 0.85);
+
+  svg.append("defs").append("clipPath").attr("id", "fc")
+    .append("rect").attr("width", innerW).attr("height", focusH + 2).attr("y", -1);
+
+  // Context bars (full history overview)
+  contextG.selectAll("rect").data(data).enter().append("rect")
+    .attr("x",      function(d) { return xFull(d.date) - barW / 2; })
+    .attr("y",      function(d) { return yFull(d.count); })
+    .attr("width",  barW)
+    .attr("height", function(d) { return contextH - yFull(d.count); })
+    .attr("fill",   "rgba(0,0,0,0.18)");
+
+  // Context x-axis
+  contextG.append("g")
+    .attr("transform", "translate(0," + contextH + ")")
+    .call(d3.axisBottom(xFull).ticks(5).tickSize(0).tickPadding(4))
+    .call(function(g) {
+      g.select(".domain").attr("stroke", gridColor);
+      g.selectAll("text").style("font-size", "9px").style("fill", "#888");
+    });
+
+  // Focus area and line
+  var focusArea = d3.area()
+    .x(function(d) { return xFocus(d.date); })
+    .y0(focusH).y1(function(d) { return yFocus(d.count); })
+    .curve(d3.curveBasis);
+  var focusLine = d3.line()
+    .x(function(d) { return xFocus(d.date); })
+    .y(function(d) { return yFocus(d.count); })
+    .curve(d3.curveBasis);
+
+  var areaPath = focusG.append("path").attr("clip-path", "url(#fc)")
+    .attr("fill", "rgba(15,110,86,0.10)");
+  var linePath = focusG.append("path").attr("clip-path", "url(#fc)")
+    .attr("fill", "none").attr("stroke", barColor).attr("stroke-width", 1.5);
+
+  var xAxisFg = focusG.append("g").attr("transform", "translate(0," + focusH + ")");
+  var yAxisFg = focusG.append("g");
+
+  // Snapshot marker
+  var snapLine = focusG.append("line")
+    .attr("y1", 0).attr("y2", focusH)
+    .attr("stroke", snapColor).attr("stroke-width", 1.5)
+    .attr("stroke-dasharray", "4,2").attr("opacity", 0.85);
+  var snapLabel = focusG.append("text")
+    .attr("y", -2).attr("font-size", 9).attr("fill", snapColor).attr("text-anchor", "end");
+
+  function styleAx(g) {
+    g.select(".domain").remove();
+    g.selectAll(".tick line").attr("stroke", gridColor).attr("x1", innerW);
+    g.selectAll("text").style("font-size", "9px").style("fill", "#888");
+  }
+
+  function updateFocus(x0, x1) {
+    xFocus.domain([x0, x1]);
+    var visible = data.filter(function(d) { return d.date >= x0 && d.date <= x1; });
+    var maxY = d3.max(visible, function(d) { return d.count; }) || 10;
+    yFocus.domain([0, maxY * 1.1]);
+
+    areaPath.datum(visible).attr("d", focusArea);
+    linePath.datum(visible).attr("d", focusLine);
+
+    var px = xFocus(x1);
+    snapLine.attr("x1", px).attr("x2", px);
+    snapLabel.attr("x", Math.max(px - 4, 40)).text(fmtDisplay(x1));
+
+    xAxisFg.call(d3.axisBottom(xFocus).ticks(5).tickSize(-focusH).tickPadding(4)).call(styleAx);
+    yAxisFg.call(d3.axisLeft(yFocus).ticks(4).tickSize(-innerW).tickPadding(4)).call(styleAx);
+
+    var days = Math.round((x1 - x0) / 86400000);
+    document.getElementById("min-date-out").textContent  = fmtDisplay(x0);
+    document.getElementById("max-date-out").textContent  = fmtDisplay(x1);
+    document.getElementById("window-days-out").textContent = days;
+  }
+
+  // Brush
+  var brush = d3.brushX()
+    .extent([[0, 0], [innerW, contextH]])
+    .on("end", function(event) {
+      if (!event.selection) return;
+      var x0 = xFull.invert(event.selection[0]);
+      var x1 = xFull.invert(event.selection[1]);
+      updateFocus(x0, x1);
+      _sendValue({ selected_date: fmtDate(x1), window_days: Math.round((x1 - x0) / 86400000) });
+    });
+
+  var brushG = contextG.append("g").call(brush);
+  brushG.select(".selection")
+    .attr("fill", "rgba(15,110,86,0.12)").attr("stroke", barColor).attr("stroke-width", 1);
+  brushG.selectAll(".handle").attr("fill", barColor).attr("rx", 2);
+  brushG.select(".overlay").attr("fill", "transparent");
+
+  // Initial position
+  var parseDate = d3.timeParse("%Y-%m-%d");
+  var endDate   = defaultDate ? parseDate(defaultDate) : data[data.length - 1].date;
+  if (!endDate || endDate > data[data.length - 1].date) endDate = data[data.length - 1].date;
+  var startDate = new Date(endDate.getTime() - defaultWindow * 86400000);
+  if (startDate < data[0].date) startDate = data[0].date;
+
+  brushG.call(brush.move, [xFull(startDate), xFull(endDate)]);
+  updateFocus(startDate, endDate);
+  _sendValue({ selected_date: fmtDate(endDate), window_days: Math.round((endDate - startDate) / 86400000) });
+  _sendHeight();
+}
+</script>
+</body>
+</html>

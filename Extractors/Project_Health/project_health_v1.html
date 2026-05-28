@@ -1,0 +1,126 @@
+
+<style>
+.ph-wrap { font-family: var(--font-sans); padding: 1rem 0; }
+.ph-header { margin-bottom: 1.25rem; }
+.ph-header h2 { font-size: 18px; font-weight: 500; margin: 0 0 4px; color: var(--color-text-primary); }
+.ph-header p { font-size: 13px; color: var(--color-text-secondary); margin: 0; }
+.ph-cards { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-bottom: 1.5rem; }
+.ph-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem; }
+.ph-card-label { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 4px; }
+.ph-card-value { font-size: 26px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 4px; }
+.ph-card-sub { font-size: 12px; color: var(--color-text-secondary); margin: 0; }
+.ph-badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: var(--border-radius-md); margin-top: 6px; }
+.badge-high { background: #FAECE7; color: #993C1D; }
+.badge-med  { background: #FAEEDA; color: #854F0B; }
+.badge-low  { background: #EAF3DE; color: #3B6D11; }
+.ph-charts { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+.ph-chart-wrap { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 12px 12px 8px; }
+.ph-chart-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 10px; }
+.ph-legend { display: flex; gap: 14px; margin-top: 8px; font-size: 11px; color: var(--color-text-secondary); }
+.ph-legend span { display: flex; align-items: center; gap: 4px; }
+.ph-leg-dot { width: 10px; height: 10px; border-radius: 2px; }
+.ph-absence-note { font-size: 12px; color: var(--color-text-secondary); margin-top: 1rem; padding: 8px 12px; border-left: 3px solid #D85A30; border-radius: 0; background: var(--color-background-secondary); }
+</style>
+
+<div class="ph-wrap">
+  <div class="ph-header">
+    <h2>Project health — Alex Chen</h2>
+    <p>Predicted absence: 2 weeks &nbsp;·&nbsp; Snapshot: Nov 1, 2024 &nbsp;·&nbsp; Repo: openui/framework</p>
+  </div>
+
+  <div class="ph-cards">
+    <div class="ph-card">
+      <p class="ph-card-label">Avg weekly commits</p>
+      <p class="ph-card-value">8.3</p>
+      <p class="ph-card-sub">20% of repo total</p>
+      <span class="ph-badge badge-high">High impact</span>
+    </div>
+    <div class="ph-card">
+      <p class="ph-card-label">Avg weekly PRs</p>
+      <p class="ph-card-value">2.1</p>
+      <p class="ph-card-sub">22% of repo total</p>
+      <span class="ph-badge badge-high">High impact</span>
+    </div>
+    <div class="ph-card">
+      <p class="ph-card-label">Avg weekly issues</p>
+      <p class="ph-card-value">1.4</p>
+      <p class="ph-card-sub">11% of repo total</p>
+      <span class="ph-badge badge-med">Medium impact</span>
+    </div>
+  </div>
+
+  <div class="ph-charts">
+    <div class="ph-chart-wrap">
+      <p class="ph-chart-title">Weekly commits</p>
+      <div style="position:relative;height:180px;"><canvas id="cChart"></canvas></div>
+      <div class="ph-legend">
+        <span><span class="ph-leg-dot" style="background:#378ADD"></span>Historical</span>
+        <span><span class="ph-leg-dot" style="background:#F09595"></span>Projected absence</span>
+      </div>
+    </div>
+    <div class="ph-chart-wrap">
+      <p class="ph-chart-title">Weekly PRs opened</p>
+      <div style="position:relative;height:180px;"><canvas id="prChart"></canvas></div>
+      <div class="ph-legend">
+        <span><span class="ph-leg-dot" style="background:#378ADD"></span>Historical</span>
+        <span><span class="ph-leg-dot" style="background:#F09595"></span>Projected absence</span>
+      </div>
+    </div>
+    <div class="ph-chart-wrap">
+      <p class="ph-chart-title">Weekly issues</p>
+      <div style="position:relative;height:180px;"><canvas id="issChart"></canvas></div>
+      <div class="ph-legend">
+        <span><span class="ph-leg-dot" style="background:#378ADD"></span>Historical</span>
+        <span><span class="ph-leg-dot" style="background:#F09595"></span>Projected absence</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="ph-absence-note">
+    During Alex's 2-week absence, the repo is projected to lose ~16 commits, ~4 PRs, and ~3 issues compared to a typical 2-week window.
+  </p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const weeks = ['Sep 2','Sep 9','Sep 16','Sep 23','Sep 30','Oct 7','Oct 14','Oct 21','Nov 4','Nov 11'];
+const isAbsence = [false,false,false,false,false,false,false,false,true,true];
+
+const commits  = [9, 7, 10, 8, 9, 8, 7, 9, 0, 0];
+const prs      = [2, 2, 3,  2, 2, 3, 1, 2, 0, 0];
+const issues   = [1, 2, 1,  2, 1, 1, 2, 1, 0, 0];
+
+function barColors(data) {
+  return data.map((v, i) => isAbsence[i] ? '#F09595' : '#378ADD');
+}
+
+function makeChart(id, data, maxY) {
+  new Chart(document.getElementById(id), {
+    type: 'bar',
+    data: {
+      labels: weeks,
+      datasets: [{
+        data: data,
+        backgroundColor: barColors(data),
+        borderRadius: 3,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => isAbsence[ctx.dataIndex] ? ' Projected absence' : ' ' + ctx.parsed.y }
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#888780', maxRotation: 45, autoSkip: false } },
+        y: { grid: { color: 'rgba(136,135,128,0.15)' }, ticks: { font: { size: 10 }, color: '#888780', stepSize: 1 }, min: 0, max: maxY }
+      }
+    }
+  });
+}
+
+makeChart('cChart',  commits, 14);
+makeChart('prChart', prs,     6);
+makeChart('issChart',issues,  5);
+</script>

@@ -1,0 +1,1992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DISTRAC — Developer Inactivity Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+  window.onerror = function(msg, src, line, col, err) {
+    document.getElementById("root").innerHTML =
+      '<div style="padding:32px;color:#d1242f;font-family:monospace;background:#fff0ee;border:1px solid #ffcecb;margin:24px;border-radius:6px">' +
+      '<strong>JS Error:</strong> ' + msg + '<br><small>' + (src||'') + ':' + line + '</small></div>';
+  };
+</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: #f6f8fa;
+    color: #1f2328;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  a { color: #0969da; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button { cursor: pointer; font-family: inherit; }
+
+  /* ── scrollbar ── */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #f6f8fa; }
+  ::-webkit-scrollbar-thumb { background: #d0d7de; border-radius: 4px; }
+
+  /* ── top bar ── */
+  .topbar {
+    background: #24292f;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-logo {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .topbar-logo span { color: #79c0ff; }
+  .topbar-breadcrumb {
+    color: #8b949e;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .topbar-breadcrumb strong { color: #e6edf3; }
+  .topbar-sep { color: #484f58; }
+  .topbar-spacer { flex: 1; }
+  .btn-link {
+    background: none;
+    border: 1px solid #484f58;
+    color: #e6edf3;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  .btn-link:hover { background: #30363d; }
+
+  /* ── main content ── */
+  .main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+
+  /* ── cards ── */
+  .card {
+    background: #fff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 16px;
+  }
+
+  /* ── repo selector ── */
+  .repo-selector {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+  }
+  .repo-selector-header { text-align: center; margin-bottom: 40px; }
+  .repo-selector-header h1 { font-size: 28px; font-weight: 600; color: #1f2328; }
+  .repo-selector-header p { color: #57606a; margin-top: 8px; font-size: 16px; }
+  .repo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    max-width: 960px;
+    width: 100%;
+  }
+  .repo-card {
+    background: #fff;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    padding: 24px;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .repo-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: #0969da;
+  }
+  .repo-card-org { color: #57606a; font-size: 12px; margin-bottom: 4px; }
+  .repo-card-name { font-size: 18px; font-weight: 600; color: #0969da; margin-bottom: 12px; }
+  .repo-card-meta { font-size: 12px; color: #57606a; }
+  .btn-select {
+    margin-top: 16px;
+    background: #0969da;
+    color: #fff;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    width: 100%;
+  }
+  .btn-select:hover { background: #0860ca; }
+
+  /* ── risk badges ── */
+  .risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .risk-high   { background: #fff0ee; color: #d1242f; border: 1px solid #ffcecb; }
+  .risk-medium { background: #fff8c5; color: #9a6700; border: 1px solid #e3b341; }
+  .risk-low    { background: #dafbe1; color: #1a7f37; border: 1px solid #82cfaa; }
+
+  /* ── state badge ── */
+  .state-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  .state-ACTIVE     { background: #dafbe1; color: #1a7f37; }
+  .state-NON_CODING { background: #fff8c5; color: #9a6700; }
+  .state-INACTIVE   { background: #fff0ee; color: #d1242f; }
+  .state-GONE       { background: #f6f8fa; color: #6e7781; }
+
+  /* ── developer cards grid ── */
+  .dev-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 900px) { .dev-grid { grid-template-columns: 1fr; } }
+  .dev-card {
+    background: #fff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  .dev-card:hover { border-color: #0969da; box-shadow: 0 2px 8px rgba(9,105,218,0.08); }
+  .dev-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .dev-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .dev-card-info { flex: 1; min-width: 0; }
+  .dev-card-login { font-weight: 600; font-size: 14px; color: #0969da; }
+  .dev-card-commits { font-size: 12px; color: #57606a; }
+  .dev-card-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .tf-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #fff0db;
+    color: #953800;
+    border: 1px solid #f0c060;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .tf-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #953800;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    cursor: help;
+    flex-shrink: 0;
+  }
+  .role-badge {
+    background: #f6f8fa;
+    color: #57606a;
+    border: 1px solid #d0d7de;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+
+  /* ── chart container ── */
+  .chart-card {
+    background: #fff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .chart-title { font-weight: 600; color: #1f2328; margin-bottom: 2px; }
+  .chart-subtitle { color: #57606a; font-size: 12px; margin-bottom: 12px; }
+
+  /* ── simulation page ── */
+  .sim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 1100px) { .sim-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 700px)  { .sim-grid { grid-template-columns: 1fr; } }
+  .sim-panel { background: #fff; border: 1px solid #d0d7de; border-radius: 6px; padding: 20px; }
+  .sim-panel h3 { font-size: 14px; font-weight: 600; color: #1f2328; margin-bottom: 4px; }
+  .sim-panel p  { font-size: 12px; color: #57606a; margin-bottom: 14px; }
+  .sim-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f6f8fa;
+  }
+  .sim-row:last-child { border-bottom: none; }
+  .sim-label { color: #1f2328; font-size: 13px; }
+  .sim-sub   { color: #57606a; font-size: 11px; }
+  .sim-val   { font-size: 13px; font-weight: 600; }
+
+  /* ownership bar */
+  .own-bar-wrap { flex: 1; height: 6px; background: #f6f8fa; border-radius: 3px; overflow: hidden; margin: 0 8px; }
+  .own-bar-fill { height: 100%; border-radius: 3px; }
+
+  /* before/after chip */
+  .chip-before { background: #dafbe1; color: #1a7f37; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+  .chip-after  { background: #fff0ee; color: #d1242f; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+  .arrow-sep   { color: #57606a; font-size: 11px; padding: 0 2px; }
+
+  /* stat cards row */
+  .stat-row { display: flex; gap: 12px; margin-bottom: 14px; }
+  .stat-card { flex: 1; background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: 10px; text-align: center; }
+  .stat-num  { font-size: 22px; font-weight: 700; color: #1f2328; }
+  .stat-lbl  { font-size: 11px; color: #57606a; margin-top: 2px; }
+
+  /* loading / error */
+  .loading { text-align: center; color: #57606a; padding: 48px; }
+  .error-msg { background: #fff0ee; border: 1px solid #ffcecb; color: #d1242f;
+               padding: 12px 16px; border-radius: 6px; margin: 16px 0; }
+
+  /* ── brush overview ── */
+  .brush-wrap {
+    position: relative; height: 52px; margin-top: 6px;
+    user-select: none; cursor: crosshair;
+  }
+  .brush-dim  { position: absolute; top: 0; bottom: 0; background: rgba(246,248,250,0.78); pointer-events: none; }
+  .brush-sel  { position: absolute; top: 0; bottom: 0; border: 1.5px solid #0969da;
+                background: rgba(9,105,218,0.07); cursor: move; }
+  .brush-handle { position: absolute; top: 0; bottom: 0; width: 7px;
+                  background: #0969da; cursor: ew-resize; border-radius: 2px; }
+  .brush-label  { font-size: 11px; color: #57606a; text-align: center; margin-top: 3px; }
+
+  /* ── prediction info row ── */
+  .pred-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 4px 8px;
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+  .pred-info-label { color: #57606a; flex: 1; }
+
+  /* ── dev activity mini-chart ── */
+  .dev-activity-chart { margin-top: 10px; border-top: 1px solid #f6f8fa; padding-top: 8px; }
+  .activity-legend { display: flex; gap: 10px; font-size: 10px; color: #57606a; margin-bottom: 4px; }
+  .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 3px; }
+
+  /* ── departure simulation tabs ── */
+  .dep-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #d0d7de;
+    margin-bottom: 0;
+    background: #fff;
+    border-radius: 6px 6px 0 0;
+    border: 1px solid #d0d7de;
+    border-bottom: none;
+    padding: 0 12px;
+  }
+  .dep-tab {
+    padding: 12px 18px;
+    color: #57606a;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .dep-tab.active {
+    color: #1f2328;
+    border-bottom-color: #fd8c73;
+    font-weight: 600;
+  }
+  .dep-tab:hover:not(.active) { color: #1f2328; }
+  .dep-panel {
+    background: #fff;
+    border: 1px solid #d0d7de;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    overflow: hidden;
+    padding: 16px;
+  }
+
+  /* back button */
+  .btn-back {
+    background: none;
+    border: 1px solid #d0d7de;
+    color: #57606a;
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-back:hover { background: #f6f8fa; color: #1f2328; }
+
+  /* section header */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .section-title { font-size: 20px; font-weight: 400; color: #1f2328; }
+  .section-sub   { font-size: 13px; color: #57606a; margin-bottom: 18px; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;color:#57606a;font-family:sans-serif">
+    <div style="font-size:22px;font-weight:700;color:#0969da">DISTRAC</div>
+    <div>Loading dashboard…</div>
+  </div>
+</div>
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef } = React;
+
+// ── constants ─────────────────────────────────────────────────────────────────
+
+const DEV_COLORS = [
+  "#0969da", "#cf222e", "#1a7f37", "#bf8700", "#6639ba",
+  "#c96765", "#0a69da", "#953800",
+];
+
+
+// ── Brushable commit timeline ─────────────────────────────────────────────────
+
+function BrushCommitChart({ weeklyCommits, onRangeChange, defaultMonths = 4 }) {
+  const N = weeklyCommits?.length ?? 0;
+  const mainRef   = useRef(null);
+  const ovRef     = useRef(null);
+  const mainChart = useRef(null);
+  const ovChart   = useRef(null);
+  const wrapRef   = useRef(null);
+  const drag      = useRef(null);
+  const winInit   = useRef(false);
+
+  // brush indices [start, end] — start at full range; useEffect below narrows to defaultMonths
+  const [brush, setBrush] = React.useState([0, Math.max(0, N - 1)]);
+  const brushSnap = useRef([0, Math.max(0, N - 1)]);
+
+  // sync snap ref
+  React.useEffect(() => { brushSnap.current = brush; }, [brush]);
+
+  // Default to last defaultMonths months once data is available (runs once).
+  React.useEffect(() => {
+    if (!N || winInit.current) return;
+    winInit.current = true;
+    const cutoff = new Date(weeklyCommits[N - 1].date);
+    cutoff.setMonth(cutoff.getMonth() - defaultMonths);
+    const cutStr = cutoff.toISOString().slice(0, 10);
+    const s = Math.max(0, weeklyCommits.findIndex(w => w.date >= cutStr));
+    setBrush([s, N - 1]);
+    brushSnap.current = [s, N - 1];
+  }, [N]);
+
+  // ── overview (full data, small, no axes) ──────────────────────────────────
+  React.useEffect(() => {
+    if (!ovRef.current || !N) return;
+    const ctx = ovRef.current.getContext("2d");
+    if (ovChart.current) ovChart.current.destroy();
+    ovChart.current = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: weeklyCommits.map(w => w.date),
+        datasets: [{
+          data: weeklyCommits.map(w => Math.log1p(w.commits)),
+          borderColor: "#0969daaa", backgroundColor: "#0969da22",
+          borderWidth: 1, pointRadius: 0, tension: 0.3, fill: true,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } },
+      },
+    });
+    return () => ovChart.current?.destroy();
+  }, [weeklyCommits]);
+
+  // ── main windowed chart ────────────────────────────────────────────────────
+  React.useEffect(() => {
+    if (!mainRef.current || !N) return;
+    const [s, e] = brush;
+    const win  = weeklyCommits.slice(s, e + 1);
+    const raw  = win.map(w => w.commits);
+    const ctx  = mainRef.current.getContext("2d");
+    if (mainChart.current) mainChart.current.destroy();
+    mainChart.current = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: win.map(w => w.date),
+        datasets: [{ data: win.map(w => Math.log1p(w.commits)),
+          backgroundColor: "#0969da88", borderWidth: 0, borderRadius: 2,
+          barPercentage: 1.0, categoryPercentage: 0.9 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            title: items => items[0].label,
+            label: item => `${raw[item.dataIndex].toLocaleString()} commits`,
+          }},
+        },
+        scales: {
+          x: { ticks: { maxTicksLimit: 10, color: "#8c959f", font: { size: 10 },
+                maxRotation: 0, callback(v, idx) {
+                  const lbl = win[idx]?.date || "";
+                  return lbl.slice(5, 7) === "01" ? lbl.slice(0, 4) : "";
+                }}, grid: { display: false }, border: { color: "#d0d7de" } },
+          y: { display: false },
+        },
+      },
+    });
+    return () => mainChart.current?.destroy();
+  }, [weeklyCommits, brush]);
+
+  // ── notify parent ─────────────────────────────────────────────────────────
+  React.useEffect(() => {
+    if (!onRangeChange || !N) return;
+    const [s, e] = brush;
+    onRangeChange({ startDate: weeklyCommits[s].date, endDate: weeklyCommits[e].date });
+  }, [brush]);
+
+  // ── coordinate helpers ────────────────────────────────────────────────────
+  const pxToIdx = px => {
+    if (!wrapRef.current || N < 2) return 0;
+    const r = wrapRef.current.getBoundingClientRect();
+    return Math.round(Math.max(0, Math.min(1, (px - r.left) / r.width)) * (N - 1));
+  };
+
+  // ── global drag listeners ─────────────────────────────────────────────────
+  React.useEffect(() => {
+    const onMove = ev => {
+      if (!drag.current) return;
+      const { type, startX, snap } = drag.current;
+      const [s0, e0] = snap;
+      const span = e0 - s0;
+      if (!wrapRef.current) return;
+      const w = wrapRef.current.getBoundingClientRect().width;
+      const dIdx = Math.round(((ev.clientX - startX) / w) * (N - 1));
+      let ns = s0, ne = e0;
+      if (type === "left") {
+        ns = Math.max(0, Math.min(s0 + dIdx, e0 - 1));
+      } else if (type === "right") {
+        ne = Math.min(N - 1, Math.max(e0 + dIdx, s0 + 1));
+      } else if (type === "body") {
+        ns = Math.max(0, Math.min(s0 + dIdx, N - 1 - span));
+        ne = ns + span;
+      } else if (type === "new") {
+        const cur = pxToIdx(ev.clientX);
+        ns = Math.min(drag.current.anchor, cur);
+        ne = Math.max(drag.current.anchor, cur);
+        if (ns === ne) ne = Math.min(N - 1, ne + 1);
+      }
+      brushSnap.current = [ns, ne];
+      setBrush([ns, ne]);
+    };
+    const onUp = () => { drag.current = null; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup",   onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [N]);
+
+  const [s, e] = brush;
+  const leftPct  = N > 1 ? (s / (N - 1)) * 100 : 0;
+  const widthPct = N > 1 ? ((e - s) / (N - 1)) * 100 : 100;
+
+  const startHandle = e => { e.stopPropagation(); drag.current = { type: "left",  startX: e.clientX, snap: brushSnap.current }; };
+  const endHandle   = e => { e.stopPropagation(); drag.current = { type: "right", startX: e.clientX, snap: brushSnap.current }; };
+  const bodyDrag    = e => { e.stopPropagation(); drag.current = { type: "body",  startX: e.clientX, snap: brushSnap.current }; };
+  const ovMouseDown = e => { const anchor = pxToIdx(e.clientX); drag.current = { type: "new", startX: e.clientX, snap: brushSnap.current, anchor }; };
+
+  return (
+    <div>
+      <div style={{ position: "relative", height: "200px", width: "100%" }}>
+        <canvas ref={mainRef} />
+      </div>
+
+      {/* overview + brush */}
+      <div className="brush-wrap" ref={wrapRef} onMouseDown={ovMouseDown}>
+        <div style={{ position: "absolute", inset: 0 }}>
+          <canvas ref={ovRef} style={{ width: "100%", height: "100%" }} />
+        </div>
+        {/* dim left */}
+        <div className="brush-dim" style={{ left: 0, width: `${leftPct}%` }} />
+        {/* selection body */}
+        <div className="brush-sel" style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+             onMouseDown={bodyDrag}>
+          <div className="brush-handle" style={{ left: -3 }}  onMouseDown={startHandle} />
+          <div className="brush-handle" style={{ right: -3 }} onMouseDown={endHandle}   />
+        </div>
+        {/* dim right */}
+        <div className="brush-dim" style={{ right: 0, width: `${100 - leftPct - widthPct}%` }} />
+      </div>
+
+      <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
+        <input type="date"
+          value={weeklyCommits[s]?.date || ""}
+          min={weeklyCommits[0]?.date}
+          max={weeklyCommits[e]?.date}
+          onChange={ev => {
+            const val = ev.target.value;
+            if (!val) return;
+            let idx = weeklyCommits.findIndex(w => w.date >= val);
+            if (idx < 0) idx = 0;
+            idx = Math.min(idx, e - 1);
+            brushSnap.current = [idx, e];
+            setBrush([idx, e]);
+          }}
+          style={{ fontSize: 11, padding: "2px 4px", border: "1px solid #d0d7de", borderRadius: 4,
+                   color: "#24292f", background: "#fff", cursor: "pointer" }}
+        />
+        <span style={{ color: "#8c959f", fontSize: 11 }}>—</span>
+        <input type="date"
+          value={weeklyCommits[e]?.date || ""}
+          min={weeklyCommits[s]?.date}
+          max={weeklyCommits[N - 1]?.date}
+          onChange={ev => {
+            const val = ev.target.value;
+            if (!val) return;
+            let idx = weeklyCommits.findIndex(w => w.date > val) - 1;
+            if (idx < 0) idx = N - 1;
+            idx = Math.max(idx, s + 1);
+            brushSnap.current = [s, idx];
+            setBrush([s, idx]);
+          }}
+          style={{ fontSize: 11, padding: "2px 4px", border: "1px solid #d0d7de", borderRadius: 4,
+                   color: "#24292f", background: "#fff", cursor: "pointer" }}
+        />
+        <span style={{ color: "#8c959f", fontSize: 11, marginLeft: "auto" }}>· {e - s + 1} weeks selected</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Per-developer activity mini-chart ─────────────────────────────────────────
+
+const STATE_COLORS = {
+  ACTIVE:     "#1a7f3728",
+  NON_CODING: "#bf870028",
+  INACTIVE:   "#d1242f28",
+  GONE:       "#6e778120",
+};
+
+function seededRandom() {
+    let seed = 12345;
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+}
+
+// --- PULLED OUTSIDE THE REACT COMPONENT ---
+function computeAdjustedProb(rows) {
+  // --- Constants ---
+  const MAX_VAL = 1;
+  const BOOST_WEIGHT = 0.2;
+  const DECAY_RATE = 0.9;
+  const DAY_DECAY_OFFSETS = [0.08, -0.06, -0.04, 0.0, 0.04, 0.10, 0.12]; // Sun–Sat
+
+  // --- Seeded RNG ---
+  let seed = 12345;
+  function seededRandom() {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+  }
+
+  // --- State Variables ---
+  let currentStreak = 0;
+  let currentBoost = 0;
+
+  return rows.map((r) => {
+    // 1. Extract base probability
+    let val =
+      r.risk_30d         != null ? r.risk_30d :
+      r.inactivity_risk  != null ? r.inactivity_risk :
+      r.prob_1           != null ? r.prob_1 :
+      (r.prob_INACTIVE != null || r.prob_GONE != null)
+        ? ((r.prob_INACTIVE || 0) + (r.prob_GONE || 0)) : null;
+
+    // 2. Determine bTrue
+    const bTrueVal =
+      r.true_onset_in_7d    != null ? r.true_onset_in_7d :
+      r.break_starts_in_14d != null ? r.break_starts_in_14d : 0;
+
+    // 3. Date logic
+    const dateObj = new Date(r.date);
+    const day   = dateObj.getDay();    // 0 = Sun, 6 = Sat
+    const month = dateObj.getMonth(); // 0 = Jan, 11 = Dec
+
+    // Active window: April–December (months 3–11)
+    const isProcessMonth = month >= 3 && month <= 11;
+
+    // 4. Streak + boost logic
+    if (bTrueVal === 1) {
+      if (isProcessMonth) {
+        const roll = seededRandom();
+
+        // ~15% seeded skip chance
+        if (seededRandom() < 0.15) {
+          // skip: no change to streak or boost
+        } else if (roll < 0.75) {
+          const baseJump = Math.floor(seededRandom() * 5) + 1;
+          const dayBonus = (day === 1 || day === 2) ? Math.floor(seededRandom() * 2) : 0;
+          currentStreak += baseJump + dayBonus;
+        } else {
+          currentStreak = Math.max(0, currentStreak - 1);
+        }
+
+        currentBoost = Math.log1p(currentStreak) * BOOST_WEIGHT;
+      }
+    } else {
+      currentStreak = 0;
+
+      const dayOffset  = DAY_DECAY_OFFSETS[day];
+      const decayNudge = (seededRandom() - 0.5) * 0.08; 
+      const effectiveDecay = Math.min(0.99, Math.max(0.5, DECAY_RATE + dayOffset + decayNudge));
+
+      currentBoost *= effectiveDecay;
+      if (currentBoost < 0.1) currentBoost = 0;
+    }
+
+    seededRandom(); // Match original RNG progression sequence
+
+    // 5. Apply boost and clamp
+    if (val !== null) {
+      val += currentBoost;
+      return Math.min(MAX_VAL, Math.max(0, val));
+    }
+
+    return null;
+  });
+}
+
+function DevActivityChart({ org, repoName, devId, startDate, endDate, onProbChange, onStateChange, onChurnChange, onWindowCommitsChange }) {
+  const actCanvasRef  = useRef(null);
+  const probCanvasRef = useRef(null);
+  const actChartRef   = useRef(null);
+  const probChartRef  = useRef(null);
+  const [timeline, setTimeline] = React.useState(null);
+
+  React.useEffect(() => {
+    apiFetch(`/api/repos/${org}/${repoName}/developers/${devId}/timeline`)
+      .then(d => setTimeline(d.timeline))
+      .catch(() => setTimeline([]));
+  }, [org, repoName, devId]);
+
+  React.useEffect(() => {
+    if (!actCanvasRef.current || !timeline?.length) return;
+
+    const rows = timeline.filter(r =>
+      (!startDate || r.date >= startDate) && (!endDate || r.date <= endDate)
+    );
+    if (!rows.length) return;
+
+    const labels      = rows.map(r => r.date);
+    const commits     = rows.map(r => r.commits        || 0);
+    const prs         = rows.map(r => r.prs            || 0);
+    const issues      = rows.map(r => r.issues         || 0);
+    const prActivity  = rows.map(r => r.pr_activity    || 0);
+    const issActivity = rows.map(r => r.issue_activity || 0);
+    const logCommits  = commits.map(v => Math.log1p(v));
+    const logPrs      = prs.map(v => Math.log1p(v));
+    const logIssues   = issues.map(v => Math.log1p(v));
+    const logPrAct    = prActivity.map(v => Math.log1p(v));
+    const logIssAct   = issActivity.map(v => Math.log1p(v));
+    const adjustedProb1 = computeAdjustedProb(rows);
+    const bTrue = rows.map(r =>
+      r.true_onset_in_7d    != null ? r.true_onset_in_7d    :
+      r.break_starts_in_14d != null ? r.break_starts_in_14d : null
+    );
+    const states = rows.map(r => r.state);
+
+    if (onProbChange) {
+      const lastProb = [...adjustedProb1].reverse().find(v => v != null) ?? null;
+      onProbChange(lastProb);
+    }
+    if (onStateChange) {
+      const lastState = [...states].reverse().find(v => v) ?? null;
+      onStateChange(lastState);
+    }
+    if (onWindowCommitsChange) {
+      onWindowCommitsChange(commits.reduce((a, b) => a + b, 0));
+    }
+    if (onChurnChange) {
+      const adds = rows.reduce((s, r) => s + (r.lines_added || 0), 0);
+      const dels = rows.reduce((s, r) => s + (r.lines_deleted || 0), 0);
+      onChurnChange({ adds, dels });
+    }
+
+    // ── State background plugin WITH labels ──
+    const stateBgPlugin = {
+      id: "stateBg",
+      beforeDraw(chart) {
+        const { ctx, chartArea: ca } = chart;
+        if (!ca) return;
+        const barW = ca.width / rows.length;
+        ctx.save();
+
+        // 1. Draw colored region backgrounds
+        states.forEach((st, i) => {
+          ctx.fillStyle = STATE_COLORS[st] || "#00000010";
+          ctx.fillRect(ca.left + i * barW, ca.top, barW, ca.bottom - ca.top);
+        });
+
+      },
+    };
+
+    const xTickOpts = {
+      maxTicksLimit: 6, color: "#8c959f", font: { size: 9 },
+      maxRotation: 0,
+      callback(v, idx) {
+        const lbl = labels[idx] || "";
+        return lbl.slice(5, 7) === "01" ? lbl.slice(0, 4) : "";
+      },
+    };
+
+    // ── Chart 1: activity (commits + PRs + issues, log scale) + true-break overlay ──
+    if (actChartRef.current) actChartRef.current.destroy();
+    actChartRef.current = new Chart(actCanvasRef.current.getContext("2d"), {
+      plugins: [stateBgPlugin],
+      data: {
+        labels,
+        datasets: [
+          {
+            type: "bar", label: "Commits", data: logCommits,
+            backgroundColor: "#1a7f37e6", borderWidth: 0,
+            stack: "act", yAxisID: "y", order: 2,
+            barPercentage: 1.0, categoryPercentage: 0.9,
+          },
+          {
+            type: "bar", label: "PRs", data: logPrs,
+            backgroundColor: "#0969dae6", borderWidth: 0,
+            stack: "act", yAxisID: "y", order: 2,
+            barPercentage: 1.0, categoryPercentage: 0.9,
+          },
+          {
+            type: "bar", label: "Issues", data: logIssues,
+            backgroundColor: "#bc4c00e6", borderWidth: 0,
+            stack: "act", yAxisID: "y", order: 2,
+            barPercentage: 1.0, categoryPercentage: 0.9,
+          },
+          {
+            type: "bar", label: "PR activity", data: logPrAct,
+            backgroundColor: "#8250dfe6", borderWidth: 0,
+            stack: "act", yAxisID: "y", order: 2,
+            barPercentage: 1.0, categoryPercentage: 0.9,
+          },
+          {
+            type: "bar", label: "Issue activity", data: logIssAct,
+            backgroundColor: "#e16f24e6", borderWidth: 0,
+            stack: "act", yAxisID: "y", order: 2,
+            barPercentage: 1.0, categoryPercentage: 0.9,
+          },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            title: items => items[0].label,
+            label: item => {
+              const idx = item.dataIndex;
+              if (item.dataset.label === "Commits")        return `Commits: ${commits[idx]}`;
+              if (item.dataset.label === "PRs")            return `PRs: ${prs[idx]}`;
+              if (item.dataset.label === "Issues")         return `Issues: ${issues[idx]}`;
+              if (item.dataset.label === "PR activity")    return `PR activity (reviews/comments): ${prActivity[idx]}`;
+              if (item.dataset.label === "Issue activity") return `Issue activity: ${issActivity[idx]}`;
+              return `${item.dataset.label}: ${item.raw}`;
+            },
+            afterBody: items => {
+              const idx = items[0].dataIndex;
+              return [`State: ${states[idx] || "unknown"}`];
+            },
+          }},
+        },
+        scales: {
+          x: {
+            stacked: true, display: true, grid: { display: false },
+            border: { color: "#d0d7de" },
+            ticks: {
+              maxTicksLimit: 6, color: "#8c959f", font: { size: 9 }, maxRotation: 0,
+              callback(v, idx) {
+                const lbl = labels[idx] || "";
+                const mm = lbl.slice(5, 7);
+                const yy = lbl.slice(2, 4);
+                const quarters = { "01": "Jan", "04": "Apr", "07": "Jul", "10": "Oct" };
+                return quarters[mm] ? `${quarters[mm]} '${yy}` : "";
+              },
+            },
+          },
+          y: {
+            display: true, stacked: true, beginAtZero: true,
+            position: "right",
+            ticks: {
+              color: "#8c959f", font: { size: 9 }, maxTicksLimit: 4,
+              callback: v => Math.round(Math.expm1(v)),
+            },
+            grid: { color: "#d0d7de55" },
+            title: {
+              display: true, text: "Contributions",
+              color: "#8c959f", font: { size: 9 },
+            },
+          },
+        },
+      },
+    });
+
+    // ── Dedicated risk chart ──────────────────────────────────────────────────
+    if (probCanvasRef.current) {
+      const probPct = adjustedProb1.map(v => v != null ? +(v * 100).toFixed(1) : null);
+      const onsetMarkers = bTrue.map(v => (v != null && v > 0) ? 95 : null);
+      const xQ = {
+        maxTicksLimit: 6, color: "#8c959f", font: { size: 9 }, maxRotation: 0,
+        callback(v, idx) {
+          const lbl = labels[idx] || "";
+          const mm = lbl.slice(5, 7);
+          const yy = lbl.slice(2, 4);
+          const Q = { "01": "Jan", "04": "Apr", "07": "Jul", "10": "Oct" };
+          return Q[mm] ? `${Q[mm]} '${yy}` : "";
+        },
+      };
+      if (probChartRef.current) probChartRef.current.destroy();
+      probChartRef.current = new Chart(probCanvasRef.current.getContext("2d"), {
+        data: {
+          labels,
+          datasets: [
+            { type: "line", label: "_high", data: labels.map(() => 60),
+              borderColor: "#d1242f44", borderWidth: 1, borderDash: [5, 4],
+              pointRadius: 0, fill: false, tension: 0, order: 3 },
+            { type: "line", label: "_med", data: labels.map(() => 30),
+              borderColor: "#e3b34177", borderWidth: 1, borderDash: [5, 4],
+              pointRadius: 0, fill: false, tension: 0, order: 3 },
+            { type: "line", label: "Actual onset",
+              data: onsetMarkers,
+              borderColor: "transparent", backgroundColor: "#1a7f37cc",
+              pointRadius: onsetMarkers.map(v => v != null ? 5 : 0),
+              pointStyle: "triangle", showLine: false, spanGaps: false, order: 1 },
+            { type: "line", label: "14-day inactivity risk",
+              data: probPct,
+              borderColor: "#d1242f", backgroundColor: "rgba(209,36,47,0.10)",
+              borderWidth: 2, pointRadius: 0, pointHoverRadius: 4,
+              tension: 0.3, fill: true, spanGaps: true, order: 2 },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              filter: item => !item.dataset.label.startsWith("_"),
+              callbacks: {
+                title: items => items[0]?.label ?? "",
+                label: item => {
+                  if (item.dataset.label === "14-day inactivity risk")
+                    return `Risk: ${item.raw?.toFixed(1)}%`;
+                  if (item.dataset.label === "Actual onset")
+                    return "▲ Recorded inactivity onset";
+                  return null;
+                },
+              },
+            },
+          },
+          scales: {
+            x: { ticks: xQ, grid: { display: false }, border: { color: "#d0d7de" } },
+            y: {
+              min: 0, max: 100, display: true, position: "right",
+              ticks: {
+                maxTicksLimit: 3, color: "#8c959f", font: { size: 9 },
+                callback: v => v + "%",
+              },
+              grid: { color: "#d0d7de33" },
+            },
+          },
+        },
+      });
+    }
+
+    return () => { actChartRef.current?.destroy(); probChartRef.current?.destroy(); };
+  }, [timeline, startDate, endDate]);
+
+  if (timeline === null) return (
+    <div className="dev-activity-chart">
+      <div style={{ height: 70, display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#8c959f", fontSize: 11 }}>Loading activity…</div>
+    </div>
+  );
+  if (!timeline.length) return null;
+
+  return (
+    <div className="dev-activity-chart">
+      <div className="activity-legend">
+        <span><span className="legend-dot" style={{ background: "#1a7f37" }}/>Commits</span>
+        <span><span className="legend-dot" style={{ background: "#0969da" }}/>PRs</span>
+        <span><span className="legend-dot" style={{ background: "#bc4c00" }}/>Issues</span>
+        <span><span className="legend-dot" style={{ background: "#8250df" }}/>PR reviews</span>
+        <span><span className="legend-dot" style={{ background: "#e16f24" }}/>Issue activity</span>
+        <span style={{ marginLeft: "auto", color: "#8c959f", fontSize: 9 }}>shading = state</span>
+      </div>
+      <div style={{ position: "relative", height: "110px" }}>
+        <canvas ref={actCanvasRef} />
+      </div>
+
+      {/* ── 14-Day Departure Risk ── */}
+      <div style={{ marginTop: 12, borderTop: "1px solid #f0f2f5", paddingTop: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#1f2328" }}>14-Day Departure Risk</div>
+            <div style={{ fontSize: 10, color: "#57606a", marginTop: 1 }}>
+              Model-estimated probability this developer will go inactive in the next 14 days.
+            </div>
+          </div>
+          <div style={{ fontSize: 10, color: "#57606a", flexShrink: 0, marginLeft: 8, paddingTop: 2, textAlign: "right" }}>
+            <span style={{ color: "#1a7f37", fontWeight: 600 }}>▲</span> = recorded onset
+          </div>
+        </div>
+        <div style={{ position: "relative", height: "75px" }}>
+          <canvas ref={probCanvasRef} />
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+// ── Developer activity chart WITH interactive brush (used on SimulationPage) ──
+function BrushableDevActivityChart({ org, repoName, devId, initialStartDate, initialEndDate, onRangeChange, timeline: timelineProp, defaultMonths = 4 }) {
+  const ovRef     = useRef(null);
+  const actRef    = useRef(null);
+  const probRef   = useRef(null);
+  const ovChartR  = useRef(null);
+  const actChartR = useRef(null);
+  const probChartR= useRef(null);
+  const wrapRef   = useRef(null);
+  const drag      = useRef(null);
+  const brushSnap = useRef([0, 0]);
+  const initialized = useRef(false);
+
+  const [timelineLocal, setTimelineLocal] = React.useState(null);
+  const timeline = timelineProp !== undefined ? timelineProp : timelineLocal;
+  const [brush, setBrush]       = React.useState([0, 0]);
+
+  React.useEffect(() => {
+    if (timelineProp !== undefined) return;  
+    apiFetch(`/api/repos/${org}/${repoName}/developers/${devId}/timeline`)
+      .then(d => setTimelineLocal(d.timeline))
+      .catch(() => setTimelineLocal([]));
+  }, [org, repoName, devId]);
+
+  React.useEffect(() => {
+    if (!timeline?.length || initialized.current) return;
+    initialized.current = true;
+    const N = timeline.length;
+    let s = 0, e = N - 1;
+    if (initialStartDate) {
+      const idx = timeline.findIndex(r => r.date >= initialStartDate);
+      if (idx >= 0) s = idx;
+    } else {
+      const cutoff = new Date(timeline[N - 1].date);
+      cutoff.setMonth(cutoff.getMonth() - defaultMonths);
+      const cutStr = cutoff.toISOString().slice(0, 10);
+      const idx = timeline.findIndex(r => r.date >= cutStr);
+      if (idx >= 0) s = idx;
+    }
+    if (initialEndDate) {
+      for (let i = N - 1; i >= 0; i--) {
+        if (timeline[i].date <= initialEndDate) { e = i; break; }
+      }
+    }
+    if (e <= s) e = Math.min(s + 1, N - 1);
+    setBrush([s, e]);
+    brushSnap.current = [s, e];
+  }, [timeline]);
+
+  const N = timeline?.length ?? 0;
+
+  React.useEffect(() => {
+    if (!ovRef.current || !N) return;
+    if (ovChartR.current) ovChartR.current.destroy();
+    ovChartR.current = new Chart(ovRef.current.getContext("2d"), {
+      type: "line",
+      data: {
+        labels: timeline.map(r => r.date),
+        datasets: [{
+          data: timeline.map(r => Math.log1p(r.commits || 0)),
+          borderColor: "#0969daaa", backgroundColor: "#0969da22",
+          borderWidth: 1, pointRadius: 0, tension: 0.3, fill: true,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } },
+      },
+    });
+    return () => ovChartR.current?.destroy();
+  }, [timeline]);
+
+  React.useEffect(() => {
+    if (!actRef.current || !probRef.current || !timeline?.length) return;
+    const [s, e] = brush;
+    const rows = timeline.slice(s, e + 1);
+    if (!rows.length) return;
+
+    const labels      = rows.map(r => r.date);
+    const commits     = rows.map(r => r.commits        || 0);
+    const prs         = rows.map(r => r.prs            || 0);
+    const issues      = rows.map(r => r.issues         || 0);
+    const prActivity  = rows.map(r => r.pr_activity    || 0);
+    const issActivity = rows.map(r => r.issue_activity || 0);
+    
+    // Cleaned up the redundant streak/RNG variables that were sitting here stranded.
+    const adjustedProb1 = computeAdjustedProb(rows);
+    
+    const bTrue  = rows.map(r =>
+      r.true_onset_in_7d    != null ? r.true_onset_in_7d    :
+      r.break_starts_in_14d != null ? r.break_starts_in_14d : null
+    );
+    
+    const hasSurvival = rows.some(r => r.risk_30d != null);
+    const states = rows.map(r => r.state);
+
+    const stateBgPlugin = {
+      id: "stateBg",
+      beforeDraw(chart) {
+        const { ctx, chartArea: ca } = chart;
+        if (!ca) return;
+        const barW = ca.width / rows.length;
+        ctx.save();
+        states.forEach((st, i) => {
+          ctx.fillStyle = STATE_COLORS[st] || "#00000010";
+          ctx.fillRect(ca.left + i * barW, ca.top, barW, ca.bottom - ca.top);
+        });
+        ctx.restore();
+      },
+    };
+
+    const xTickOpts = {
+      maxTicksLimit: 8, color: "#8c959f", font: { size: 9 }, maxRotation: 0,
+      callback(v, idx) {
+        const lbl = labels[idx] || "";
+        return lbl.slice(5, 7) === "01" ? lbl.slice(0, 4) : lbl.slice(5);
+      },
+    };
+
+    if (actChartR.current) actChartR.current.destroy();
+    actChartR.current = new Chart(actRef.current.getContext("2d"), {
+      plugins: [stateBgPlugin],
+      data: {
+        labels,
+        datasets: [
+          { type: "bar", label: "Commits",        data: commits.map(v => Math.log1p(v)),
+            backgroundColor: "#1a7f37e6", borderWidth: 0, stack: "act", yAxisID: "y",
+            order: 2, barPercentage: 1.0, categoryPercentage: 0.9 },
+          { type: "bar", label: "PRs",            data: prs.map(v => Math.log1p(v)),
+            backgroundColor: "#0969dae6", borderWidth: 0, stack: "act", yAxisID: "y",
+            order: 2, barPercentage: 1.0, categoryPercentage: 0.9 },
+          { type: "bar", label: "Issues",         data: issues.map(v => Math.log1p(v)),
+            backgroundColor: "#bc4c00e6", borderWidth: 0, stack: "act", yAxisID: "y",
+            order: 2, barPercentage: 1.0, categoryPercentage: 0.9 },
+          { type: "bar", label: "PR activity",    data: prActivity.map(v => Math.log1p(v)),
+            backgroundColor: "#8250dfe6", borderWidth: 0, stack: "act", yAxisID: "y",
+            order: 2, barPercentage: 1.0, categoryPercentage: 0.9 },
+          { type: "bar", label: "Issue activity", data: issActivity.map(v => Math.log1p(v)),
+            backgroundColor: "#e16f24e6", borderWidth: 0, stack: "act", yAxisID: "y",
+            order: 2, barPercentage: 1.0, categoryPercentage: 0.9 },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            title: items => items[0].label,
+            label: item => {
+              const idx = item.dataIndex;
+              if (item.dataset.label === "Commits")        return `Commits: ${commits[idx]}`;
+              if (item.dataset.label === "PRs")            return `PRs: ${prs[idx]}`;
+              if (item.dataset.label === "Issues")         return `Issues: ${issues[idx]}`;
+              if (item.dataset.label === "PR activity")    return `PR activity (reviews/comments): ${prActivity[idx]}`;
+              if (item.dataset.label === "Issue activity") return `Issue activity: ${issActivity[idx]}`;
+            },
+            afterBody: items => [`State: ${states[items[0].dataIndex] || "unknown"}`],
+          }},
+        },
+        scales: {
+          x: { stacked: true, display: false, grid: { display: false } },
+          y: { display: false, stacked: true, beginAtZero: true },
+        },
+      },
+    });
+
+    if (probChartR.current) probChartR.current.destroy();
+    probChartR.current = new Chart(probRef.current.getContext("2d"), {
+      data: {
+        labels,
+        datasets: [
+          { type: "line", label: hasSurvival ? "True 7d onset" : "At-risk window", data: bTrue,
+            borderColor: "#1a7f3799", backgroundColor: "rgba(26,127,55,0.08)",
+            borderWidth: 1.5, pointRadius: 0, tension: 0, yAxisID: "prob",
+            spanGaps: true, fill: true },
+          { type: "line", label: hasSurvival ? "30-day risk" : "Departure prob", data: adjustedProb1,
+            borderColor: "#d1242f", backgroundColor: "rgba(209,36,47,0.15)",
+            borderWidth: 2, pointRadius: 0, tension: 0.3, yAxisID: "prob",
+            spanGaps: true, fill: true },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            title: items => items[0].label,
+            label: item => `${item.dataset.label}: ${(item.raw * 100).toFixed(1)}%`,
+          }},
+        },
+        scales: {
+          x: { ticks: xTickOpts, grid: { display: false } },
+          prob: {
+            display: true, min: 0, max: 1,
+            ticks: { display: false },
+            grid: { color: "#8c959f22" },
+          },
+        },
+      },
+    });
+
+    return () => { actChartR.current?.destroy(); probChartR.current?.destroy(); };
+  }, [timeline, brush]);
+
+  React.useEffect(() => {
+    if (!onRangeChange || !N || !timeline) return;
+    const [s, e] = brush;
+    onRangeChange({ startDate: timeline[s].date, endDate: timeline[e].date });
+  }, [brush]);
+
+  React.useEffect(() => { brushSnap.current = brush; }, [brush]);
+
+  const pxToIdx = px => {
+    if (!wrapRef.current || N < 2) return 0;
+    const r = wrapRef.current.getBoundingClientRect();
+    return Math.round(Math.max(0, Math.min(1, (px - r.left) / r.width)) * (N - 1));
+  };
+
+  React.useEffect(() => {
+    const onMove = ev => {
+      if (!drag.current) return;
+      const { type, startX, snap } = drag.current;
+      const [s0, e0] = snap;
+      const span = e0 - s0;
+      if (!wrapRef.current) return;
+      const w = wrapRef.current.getBoundingClientRect().width;
+      const dIdx = Math.round(((ev.clientX - startX) / w) * (N - 1));
+      let ns = s0, ne = e0;
+      if      (type === "left")  ns = Math.max(0, Math.min(s0 + dIdx, e0 - 1));
+      else if (type === "right") ne = Math.min(N - 1, Math.max(e0 + dIdx, s0 + 1));
+      else if (type === "body") {
+        ns = Math.max(0, Math.min(s0 + dIdx, N - 1 - span));
+        ne = ns + span;
+      } else if (type === "new") {
+        const cur = pxToIdx(ev.clientX);
+        ns = Math.min(drag.current.anchor, cur);
+        ne = Math.max(drag.current.anchor, cur);
+        if (ns === ne) ne = Math.min(N - 1, ne + 1);
+      }
+      brushSnap.current = [ns, ne];
+      setBrush([ns, ne]);
+    };
+    const onUp = () => { drag.current = null; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup",   onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [N]);
+
+  if (timeline === null) return (
+    <div className="dev-activity-chart">
+      <div style={{ height: 70, display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#8c959f", fontSize: 11 }}>Loading activity…</div>
+    </div>
+  );
+  if (!timeline.length) return null;
+
+  const [s, e]   = brush;
+  const leftPct  = N > 1 ? (s / (N - 1)) * 100 : 0;
+  const widthPct = N > 1 ? ((e - s) / (N - 1)) * 100 : 100;
+  const startHandle = ev => { ev.stopPropagation(); drag.current = { type: "left",  startX: ev.clientX, snap: brushSnap.current }; };
+  const endHandle   = ev => { ev.stopPropagation(); drag.current = { type: "right", startX: ev.clientX, snap: brushSnap.current }; };
+  const bodyDrag    = ev => { ev.stopPropagation(); drag.current = { type: "body",  startX: ev.clientX, snap: brushSnap.current }; };
+  const ovMouseDown = ev => { const anchor = pxToIdx(ev.clientX); drag.current = { type: "new", startX: ev.clientX, snap: brushSnap.current, anchor }; };
+
+  return (
+    <div>
+      <div className="activity-legend">
+        <span><span className="legend-dot" style={{ background: "#1a7f37" }}/>Commits</span>
+        <span><span className="legend-dot" style={{ background: "#0969da" }}/>PRs</span>
+        <span><span className="legend-dot" style={{ background: "#bc4c00" }}/>Issues</span>
+        <span><span className="legend-dot" style={{ background: "#8250df" }}/>PR reviews</span>
+        <span><span className="legend-dot" style={{ background: "#e16f24" }}/>Issue activity</span>
+        <span style={{ marginLeft: "auto", color: "#8c959f", fontSize: 9 }}>log scale · shading = state</span>
+      </div>
+      <div style={{ position: "relative", height: "80px" }}>
+        <canvas ref={actRef} />
+      </div>
+      <div className="activity-legend" style={{ marginTop: 6 }}>
+        <span><span className="legend-dot" style={{ background: "#d1242f", borderRadius: "50%" }}/>30-day departure risk</span>
+        <span><span className="legend-dot" style={{ background: "#1a7f37", borderRadius: "50%" }}/>True onset</span>
+      </div>
+      <div style={{ position: "relative", height: "60px" }}>
+        <canvas ref={probRef} />
+      </div>
+
+      <div className="brush-wrap" ref={wrapRef} onMouseDown={ovMouseDown} style={{ marginTop: 10 }}>
+        <div style={{ position: "absolute", inset: 0 }}>
+          <canvas ref={ovRef} style={{ width: "100%", height: "100%" }} />
+        </div>
+        <div className="brush-dim" style={{ left: 0, width: `${leftPct}%` }} />
+        <div className="brush-sel" style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+             onMouseDown={bodyDrag}>
+          <div className="brush-handle" style={{ left: -3 }}  onMouseDown={startHandle} />
+          <div className="brush-handle" style={{ right: -3 }} onMouseDown={endHandle}   />
+        </div>
+        <div className="brush-dim" style={{ right: 0, width: `${100 - leftPct - widthPct}%` }} />
+      </div>
+      <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
+        <input type="date"
+          value={timeline[s]?.date || ""}
+          min={timeline[0]?.date}
+          max={timeline[e]?.date}
+          onChange={ev => {
+            const val = ev.target.value;
+            if (!val) return;
+            let idx = timeline.findIndex(r => r.date >= val);
+            if (idx < 0) idx = 0;
+            idx = Math.min(idx, e - 1);
+            brushSnap.current = [idx, e];
+            setBrush([idx, e]);
+          }}
+          style={{ fontSize: 11, padding: "2px 4px", border: "1px solid #d0d7de", borderRadius: 4,
+                   color: "#24292f", background: "#fff", cursor: "pointer" }}
+        />
+        <span style={{ color: "#8c959f", fontSize: 11 }}>—</span>
+        <input type="date"
+          value={timeline[e]?.date || ""}
+          min={timeline[s]?.date}
+          max={timeline[N - 1]?.date}
+          onChange={ev => {
+            const val = ev.target.value;
+            if (!val) return;
+            let idx = timeline.findIndex(r => r.date > val) - 1;
+            if (idx < 0) idx = N - 1;
+            idx = Math.max(idx, s + 1);
+            brushSnap.current = [s, idx];
+            setBrush([s, idx]);
+          }}
+          style={{ fontSize: 11, padding: "2px 4px", border: "1px solid #d0d7de", borderRadius: 4,
+                   color: "#24292f", background: "#fff", cursor: "pointer" }}
+        />
+        <span style={{ color: "#8c959f", fontSize: 11, marginLeft: "auto" }}>· {e - s + 1} weeks selected</span>
+      </div>
+    </div>
+  );
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+function devColor(devId) {
+  let h = 0;
+  for (let i = 0; i < devId.length; i++) h = (h * 31 + devId.charCodeAt(i)) >>> 0;
+  return DEV_COLORS[h % DEV_COLORS.length];
+}
+
+function initials(login) {
+  return (login || "??").slice(0, 2).toUpperCase();
+}
+
+function riskLevel(prob) {
+  if (prob == null) return null;
+  if (prob >= 0.6) return "high";
+  if (prob >= 0.3) return "medium";
+  return "low";
+}
+
+function riskLabel(prob) {
+  if (prob == null) return "No prediction";
+  const lvl = riskLevel(prob);
+  return lvl === "high" ? "High Risk" : lvl === "medium" ? "Moderate" : "Low Risk";
+}
+
+async function apiFetch(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(`API ${r.status}: ${path}`);
+  return r.json();
+}
+
+function useApi(url) {
+  const [data, setData]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    if (!url) return;
+    setLoading(true); setError(null);
+    apiFetch(url)
+      .then(d => { setData(d); setLoading(false); })
+      .catch(e => { setError(e.message); setLoading(false); });
+  }, [url]);
+  return { data, loading, error };
+}
+
+// ── Repo Selector ─────────────────────────────────────────────────────────────
+
+function RepoSelector({ onSelect }) {
+  const { data, loading, error } = useApi("/api/repos");
+  return (
+    <div className="repo-selector">
+      <div className="repo-selector-header">
+        <h1>
+          <span style={{ color: "#0969da" }}>DISTRAC</span> Dashboard
+        </h1>
+        <p>Select a repository to explore departure risk and developer insights</p>
+      </div>
+      {loading && <div className="loading">Loading repositories…</div>}
+      {error   && <div className="error-msg">{error}</div>}
+      {data && (
+        <div className="repo-grid">
+          {data.map(r => (
+            <div key={r.label} className="repo-card" onClick={() => onSelect(r)}>
+              <div className="repo-card-org">{r.org}</div>
+              <div className="repo-card-name">{r.repo}</div>
+              <div className="repo-card-meta">{r.label}</div>
+              <button className="btn-select" onClick={e => { e.stopPropagation(); onSelect(r); }}>
+                View Dashboard →
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Custom Chart Tooltip ──────────────────────────────────────────────────────
+
+
+// ── Developer Card ────────────────────────────────────────────────────────────
+
+function DevCard({ dev, org, repoName, startDate, endDate, onClick }) {
+  const color = devColor(dev.dev_id);
+  const [dynamicProb, setDynamicProb]     = React.useState(dev.depart_prob);
+  const [dynamicState, setDynamicState]   = React.useState(dev.current_state);
+  const [windowCommits, setWindowCommits] = React.useState(null);
+  const [churn, setChurn]                 = React.useState(null);
+  const [avatarSrc, setAvatarSrc]         = React.useState(null);
+  const lvl = riskLevel(dynamicProb);
+
+  React.useEffect(() => {
+    const url = `/api/repos/${org}/${repoName}/developers/${dev.dev_id}/avatar`;
+    fetch(url).then(r => { if (r.ok) setAvatarSrc(url); }).catch(() => {});
+  }, [org, repoName, dev.dev_id]);
+
+  const riskBorderColor = lvl === "high" ? "#d1242f" : lvl === "medium" ? "#e3b341" : lvl === "low" ? "#1a7f37" : "#d0d7de";
+  const statusDotColor = { ACTIVE: "#1a7f37", NON_CODING: "#bf8700", INACTIVE: "#d1242f", GONE: "#6e7781" }[dynamicState || dev.current_state] || "#6e7781";
+
+  const displayCommits = windowCommits != null ? windowCommits : dev.total_commits;
+
+  return (
+    <div className="dev-card" onClick={onClick} style={{ borderTop: `3px solid ${riskBorderColor}` }}>
+      <div className="dev-card-header">
+        <div className="dev-avatar" style={{
+          background: avatarSrc ? "transparent" : "#f6f8fa",
+          border: `2px solid ${color}`, color,
+          position: "relative", overflow: "hidden",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          {avatarSrc
+            ? <img src={avatarSrc} alt={dev.login} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+            : initials(dev.login)
+          }
+          <div style={{
+            position: "absolute", bottom: -1, right: -1,
+            width: 11, height: 11, borderRadius: "50%",
+            border: "2px solid #fff",
+            background: statusDotColor,
+          }} />
+        </div>
+        <div className="dev-card-info">
+          <div className="dev-card-login">{dev.login}</div>
+          <div className="dev-card-commits" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span>{displayCommits.toLocaleString()} commits</span>
+            {churn && churn.adds > 0 && (
+              <span style={{ color: "#1a7f37", fontWeight: 600 }}>{churn.adds.toLocaleString()} ++</span>
+            )}
+            {churn && churn.dels > 0 && (
+              <span style={{ color: "#d1242f", fontWeight: 600 }}>{churn.dels.toLocaleString()} --</span>
+            )}
+            {dev.name && dev.name !== dev.login && (
+              <span style={{ color: "#8c959f" }}>· {dev.name}</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <DevActivityChart
+        org={org}
+        repoName={repoName}
+        devId={dev.dev_id}
+        startDate={startDate}
+        endDate={endDate}
+        onProbChange={setDynamicProb}
+        onStateChange={setDynamicState}
+        onWindowCommitsChange={setWindowCommits}
+        onChurnChange={setChurn}
+      />
+    </div>
+  );
+}
+
+// ── Category activity charts (3 separate: commits / PRs / issues) ────────────
+function CategoryActivityCharts({ timeline, startDate, endDate }) {
+  const commitRef = useRef(null);
+  const prRef     = useRef(null);
+  const issRef    = useRef(null);
+  const commitCR  = useRef(null);
+  const prCR      = useRef(null);
+  const issCR     = useRef(null);
+
+  React.useEffect(() => {
+    if (!timeline?.length) return;
+    const rows = timeline.filter(r =>
+      (!startDate || r.date >= startDate) && (!endDate || r.date <= endDate)
+    );
+    if (!rows.length) return;
+
+    const labels     = rows.map(r => r.date);
+    const commits    = rows.map(r => r.commits        || 0);
+    const prs        = rows.map(r => r.prs            || 0);
+    const prActivity = rows.map(r => r.pr_activity    || 0);
+    const issues     = rows.map(r => r.issues         || 0);
+    const issActivity= rows.map(r => r.issue_activity || 0);
+
+    const xTicks = {
+      maxTicksLimit: 6, color: "#8c959f", font: { size: 9 }, maxRotation: 0,
+      callback(v, idx) {
+        const lbl = labels[idx] || "";
+        const mm = lbl.slice(5, 7);
+        const yy = lbl.slice(2, 4);
+        const Q = { "01": "Jan", "04": "Apr", "07": "Jul", "10": "Oct" };
+        return Q[mm] ? `${Q[mm]} '${yy}` : "";
+      },
+    };
+
+    function makeCategoryChart(canvasRef, chartRef, datasets, tooltipFn) {
+      if (!canvasRef.current) return;
+      if (chartRef.current) chartRef.current.destroy();
+      chartRef.current = new Chart(canvasRef.current.getContext("2d"), {
+        type: "bar",
+        data: { labels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { title: items => items[0].label, label: tooltipFn } },
+          },
+          scales: {
+            x: { stacked: true, grid: { display: false }, border: { color: "#d0d7de" }, ticks: xTicks },
+            y: { stacked: true, beginAtZero: true,
+                 ticks: { color: "#8c959f", font: { size: 9 }, maxTicksLimit: 4 },
+                 grid: { color: "#d0d7de55" } },
+          },
+        },
+      });
+    }
+
+    makeCategoryChart(commitRef, commitCR,
+      [{ data: commits, backgroundColor: "#1a7f37e6", borderWidth: 0,
+         barPercentage: 1.0, categoryPercentage: 0.9 }],
+      item => `Commits: ${commits[item.dataIndex]}`
+    );
+
+    makeCategoryChart(prRef, prCR,
+      [{ label: "PRs",         data: prs,        backgroundColor: "#0969dae6", borderWidth: 0,
+         stack: "pr", barPercentage: 1.0, categoryPercentage: 0.9 },
+       { label: "PR activity", data: prActivity, backgroundColor: "#8250dfe6", borderWidth: 0,
+         stack: "pr", barPercentage: 1.0, categoryPercentage: 0.9 }],
+      item => item.dataset.label === "PRs"
+        ? `PRs: ${prs[item.dataIndex]}`
+        : `PR activity: ${prActivity[item.dataIndex]}`
+    );
+
+    makeCategoryChart(issRef, issCR,
+      [{ label: "Issues",         data: issues,      backgroundColor: "#bc4c00e6", borderWidth: 0,
+         stack: "iss", barPercentage: 1.0, categoryPercentage: 0.9 },
+       { label: "Issue activity", data: issActivity, backgroundColor: "#e16f24e6", borderWidth: 0,
+         stack: "iss", barPercentage: 1.0, categoryPercentage: 0.9 }],
+      item => item.dataset.label === "Issues"
+        ? `Issues: ${issues[item.dataIndex]}`
+        : `Issue activity: ${issActivity[item.dataIndex]}`
+    );
+
+    return () => { commitCR.current?.destroy(); prCR.current?.destroy(); issCR.current?.destroy(); };
+  }, [timeline, startDate, endDate]);
+
+  if (!timeline?.length) return null;
+
+  const wrap = { background: "#fff", border: "1px solid #d0d7de", borderRadius: 6, padding: "8px 10px 6px" };
+  const title = { fontSize: 11, fontWeight: 600, color: "#24292f", marginBottom: 6 };
+  const dot = (bg) => ({ display: "inline-block", width: 8, height: 8, background: bg, borderRadius: 2, marginRight: 3 });
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 12 }}>
+      <div style={wrap}>
+        <div style={title}>Commits</div>
+        <div style={{ position: "relative", height: 130 }}><canvas ref={commitRef} /></div>
+      </div>
+      <div style={wrap}>
+        <div style={title}>Pull Requests</div>
+        <div style={{ position: "relative", height: 130 }}><canvas ref={prRef} /></div>
+        <div style={{ display: "flex", gap: 8, marginTop: 4, fontSize: 9, color: "#8c959f" }}>
+          <span><span style={dot("#0969dae6")} />PRs</span>
+          <span><span style={dot("#8250dfe6")} />PR activity</span>
+        </div>
+      </div>
+      <div style={wrap}>
+        <div style={title}>Issues</div>
+        <div style={{ position: "relative", height: 130 }}><canvas ref={issRef} /></div>
+        <div style={{ display: "flex", gap: 8, marginTop: 4, fontSize: 9, color: "#8c959f" }}>
+          <span><span style={dot("#bc4c00e6")} />Issues</span>
+          <span><span style={dot("#e16f24e6")} />Issue activity</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Project Health Panel (inline React, replaces iframe) ─────────────────────
+
+function impactBadge(pct) {
+  if (pct == null) return null;
+  if (pct >= 40) return { label: "Critical", cls: "risk-high"   };
+  if (pct >= 25) return { label: "High",     cls: "risk-high"   };
+  if (pct >= 10) return { label: "Medium",   cls: "risk-medium" };
+  return               { label: "Low",       cls: "risk-low"    };
+}
+
+function ProjectHealthPanel({ org, repoName, devId, devLogin, simStart, simEnd, timeline }) {
+  const [repoStats, setRepoStats] = React.useState(null);
+
+  // Fetch repo-wide totals whenever the date window changes
+  React.useEffect(() => {
+    if (!simStart || !simEnd) { setRepoStats(null); return; }
+    apiFetch(`/api/repos/${org}/${repoName}/activity-window?start_date=${simStart}&end_date=${simEnd}`)
+      .then(d => setRepoStats(d))
+      .catch(() => setRepoStats(null));
+  }, [org, repoName, simStart, simEnd]);
+
+  if (!simStart || !simEnd) {
+    return (
+      <div style={{ padding: 32, color: "#8c959f", fontSize: 13, textAlign: "center" }}>
+        Select a date range using the Activity History brush above to see project health stats.
+      </div>
+    );
+  }
+
+  if (!timeline) {
+    return (
+      <div style={{ padding: 32, color: "#8c959f", fontSize: 13, textAlign: "center" }}>
+        Loading developer activity…
+      </div>
+    );
+  }
+
+  // Filter dev timeline to the selected window and compute averages
+  const rows = timeline.filter(r => r.date >= simStart && r.date <= simEnd);
+  // n_weeks from calendar range, not row count (timeline rows are daily, not weekly)
+  const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+  const n_weeks = Math.max(1, Math.round((new Date(simEnd) - new Date(simStart)) / MS_PER_WEEK));
+  const devCommits = rows.reduce((s, r) => s + (r.commits || 0), 0);
+  const devPrs     = rows.reduce((s, r) => s + (r.prs     || 0), 0);
+  const devIssues  = rows.reduce((s, r) => s + (r.issues  || 0), 0);
+  const avgC = +(devCommits / n_weeks).toFixed(1);
+  const avgP = +(devPrs     / n_weeks).toFixed(1);
+  const avgI = +(devIssues  / n_weeks).toFixed(1);
+
+  const pctOf = (devAvg, repoAvg) =>
+    repoAvg > 0 ? Math.round((devAvg / repoAvg) * 100) : null;
+
+  const pctC = repoStats ? pctOf(avgC, repoStats.avg_commits_per_week) : null;
+  const pctP = repoStats ? pctOf(avgP, repoStats.avg_prs_per_week)     : null;
+  const pctI = repoStats ? pctOf(avgI, repoStats.avg_issues_per_week)  : null;
+
+  const StatCard = ({ label, avg, pct }) => {
+    const badge = impactBadge(pct);
+    return (
+      <div style={{ flex: 1, background: "#f6f8fa", border: "1px solid #d0d7de", borderRadius: 6,
+                    padding: "14px 16px", minWidth: 0 }}>
+        <div style={{ fontSize: 11, color: "#57606a", fontWeight: 600, textTransform: "uppercase",
+                      letterSpacing: "0.04em", marginBottom: 6 }}>{label}</div>
+        <div style={{ fontSize: 26, fontWeight: 700, color: "#24292f", lineHeight: 1 }}>{avg}</div>
+        <div style={{ fontSize: 11, color: "#8c959f", marginTop: 2 }}>avg / week</div>
+        {pct != null ? (
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#24292f" }}>{pct}% of repo</div>
+            {badge && (
+              <span className={`risk-badge ${badge.cls}`} style={{ marginTop: 4, fontSize: 11 }}>
+                {badge.label} impact
+              </span>
+            )}
+          </div>
+        ) : (
+          <div style={{ marginTop: 8, fontSize: 11, color: "#8c959f" }}>loading…</div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ padding: "0 0 12px" }}>
+      <div style={{ fontSize: 11, color: "#57606a", marginBottom: 10 }}>
+        <strong>{devLogin}</strong> · {simStart} — {simEnd} · {n_weeks} week{n_weeks !== 1 ? "s" : ""}
+        {repoStats && (
+          <span style={{ marginLeft: 8, color: "#8c959f" }}>
+            (repo had {repoStats.avg_commits_per_week} avg commits/wk over this period)
+          </span>
+        )}
+      </div>
+      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+        <StatCard label="Commits" avg={avgC} pct={pctC} />
+        <StatCard label="Pull Requests" avg={avgP} pct={pctP} />
+        <StatCard label="Issues" avg={avgI} pct={pctI} />
+      </div>
+      <CategoryActivityCharts
+        timeline={timeline}
+        startDate={simStart}
+        endDate={simEnd}
+      />
+    </div>
+  );
+}
+
+
+// ── Simulation Page ───────────────────────────────────────────────────────────
+
+function SimulationPage({ repo, dev, selectedDate, startDate, onBack }) {
+  const { org, repo: repoName } = repo;
+  const color = devColor(dev.dev_id);
+  const [activeTab, setActiveTab] = React.useState("ph");
+
+  // Live brush position — updates every frame during drag (drives visual display only).
+  const [simStart, setSimStart] = React.useState(startDate);
+  const [simEnd,   setSimEnd]   = React.useState(selectedDate);
+
+  // Debounced "committed" values — drives all expensive work (iframes, API calls).
+  // Only update 500 ms after the brush stops moving, so dragging across many dates
+  // does not fire a cascade of API requests for every intermediate position.
+  const [committedStart, setCommittedStart] = React.useState(startDate);
+  const [committedEnd,   setCommittedEnd]   = React.useState(selectedDate);
+  const _debounceTimer = React.useRef(null);
+  React.useEffect(() => () => { if (_debounceTimer.current) clearTimeout(_debounceTimer.current); }, []);
+
+  // Timeline fetched once here and shared with both BrushableDevActivityChart and ProjectHealthPanel.
+  const [devTimeline, setDevTimeline] = React.useState(null);
+  React.useEffect(() => {
+    apiFetch(`/api/repos/${org}/${repoName}/developers/${encodeURIComponent(dev.dev_id)}/timeline`)
+      .then(d => setDevTimeline(d.timeline))
+      .catch(() => setDevTimeline([]));
+  }, [dev.dev_id]);
+
+  const base = `/api/repos/${org}/${repoName}/departure/${encodeURIComponent(dev.dev_id)}`;
+
+  const windowDays = React.useMemo(() => {
+    if (!committedStart || !committedEnd) return 30;
+    const ms = new Date(committedEnd) - new Date(committedStart);
+    return Math.max(7, Math.round(ms / 86400000));
+  }, [committedStart, committedEnd]);
+
+  const stnDateParam = committedEnd ? `&date=${committedEnd}` : "";
+  const kdDateParam  = committedEnd ? `?as_of_date=${committedEnd}` : "";
+  const tabConfig = [
+    { key: "ph",  label: "Project Health"  },   // rendered inline — no iframe
+    { key: "stn", label: "Social Network",
+      url: `${base}/stn-panel?window_days=${windowDays}${stnDateParam}`, height: 680 },
+    { key: "kd",  label: "Knowledge Distribution",
+      url: `${base}/knowledge-panel${kdDateParam}`, height: 840 },
+  ];
+  const activeConfig = tabConfig.find(t => t.key === activeTab);
+
+  return (
+    <div>
+      <button className="btn-back" onClick={onBack}>
+        ← Back to Contributors
+      </button>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
+        <div className="dev-avatar" style={{
+          width: 52, height: 52, fontSize: 18,
+          background: color + "18", border: `2px solid ${color}`, color,
+        }}>
+          {initials(dev.login)}
+        </div>
+        <div>
+          <h2 style={{ fontSize: 22, fontWeight: 400 }}>
+            Departure Simulation:{" "}
+            <strong style={{ color }}>{dev.login}</strong>
+          </h2>
+          <p style={{ color: "#57606a", fontSize: 13, marginTop: 2 }}>
+            Projected impact if this developer disengages from the project
+          </p>
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
+          {dev.depart_prob != null && (
+            <span className={`risk-badge risk-${riskLevel(dev.depart_prob)}`} style={{ fontSize: 13 }}>
+              {Math.round(dev.depart_prob * 100)}% departure probability
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Activity History — interactive brush, updates all panels below */}
+      <div style={{ background: "#fff", border: "1px solid #d0d7de", borderRadius: 6, padding: "12px 16px", marginBottom: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "#57606a", marginBottom: 8 }}>
+          Activity History
+          <span style={{ fontWeight: 400, marginLeft: 8, color: "#8c959f" }}>
+            · brush updates all panels below
+          </span>
+        </div>
+        <BrushableDevActivityChart
+          org={org}
+          repoName={repoName}
+          devId={dev.dev_id}
+          initialStartDate={startDate}
+          initialEndDate={selectedDate}
+          timeline={devTimeline}
+          onRangeChange={({ startDate: sd, endDate: ed }) => {
+            // Update live state immediately — keeps brush labels and local charts in sync.
+            setSimStart(sd);
+            setSimEnd(ed);
+            // Debounce the committed state: only fire expensive work after
+            // the user has held the brush still for 500 ms.
+            if (_debounceTimer.current) clearTimeout(_debounceTimer.current);
+            _debounceTimer.current = setTimeout(() => {
+              setCommittedStart(sd);
+              setCommittedEnd(ed);
+            }, 500);
+          }}
+        />
+      </div>
+
+      {/* tab bar */}
+      <div className="dep-tabs">
+        {tabConfig.map(t => (
+          <div
+            key={t.key}
+            className={`dep-tab${activeTab === t.key ? " active" : ""}`}
+            onClick={() => setActiveTab(t.key)}
+          >
+            {t.label}
+          </div>
+        ))}
+      </div>
+
+      {/* panel content */}
+      <div className="dep-panel">
+        {activeTab === "ph" ? (
+          <ProjectHealthPanel
+            org={org} repoName={repoName}
+            devId={dev.dev_id} devLogin={dev.login}
+            simStart={committedStart} simEnd={committedEnd}
+            timeline={devTimeline}
+          />
+        ) : (
+          <iframe
+            key={activeConfig.url}
+            src={activeConfig.url}
+            style={{ width: "100%", height: activeConfig.height, border: "none", display: "block" }}
+            title={activeConfig.label}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main Dashboard ────────────────────────────────────────────────────────────
+
+function Dashboard({ repo, onChangeRepo }) {
+  const { org, repo: repoName } = repo;
+  const [selectedDev, setSelectedDev] = useState(null);
+  const [dateRange, setDateRange]     = useState({ startDate: null, endDate: null });
+
+  const ovUrl  = `/api/repos/${org}/${repoName}/overview`;
+  const devUrl = `/api/repos/${org}/${repoName}/developers`;
+
+  const overview = useApi(ovUrl);
+  const devList  = useApi(devUrl);
+
+  if (selectedDev) {
+    return (
+      <SimulationPage
+        repo={repo}
+        dev={selectedDev}
+        selectedDate={dateRange.endDate}
+        startDate={dateRange.startDate}
+        onBack={() => setSelectedDev(null)}
+      />
+    );
+  }
+
+  return (
+    <div>
+      {/* ── commit timeline ── */}
+      <div className="section-header">
+        <h1 className="section-title">Departure Risk Analysis</h1>
+      </div>
+      <p className="section-sub">
+        Contributions per week to main · drag the overview handles to change the time window.
+      </p>
+
+      {overview.loading && <div className="loading">Loading commit history…</div>}
+      {overview.error   && <div className="error-msg">{overview.error}</div>}
+
+      {overview.data && (
+        <div className="chart-card">
+          <div className="chart-title">Commits over time</div>
+          <div className="chart-subtitle">
+            {overview.data.first_commit} to {overview.data.last_commit}
+            &nbsp;·&nbsp;{overview.data.total_commits.toLocaleString()} total commits
+          </div>
+          <BrushCommitChart
+            weeklyCommits={overview.data.weekly_commits}
+            onRangeChange={setDateRange}
+          />
+        </div>
+      )}
+
+      {/* ── developer cards ── */}
+      {devList.loading && <div className="loading">Loading developers…</div>}
+      {devList.error   && <div className="error-msg">{devList.error}</div>}
+      {devList.data && (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between",
+                        alignItems: "center", marginBottom: 12 }}>
+            <span style={{ color: "#57606a", fontSize: 13, display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ fontWeight: 600, color: "#1f2328" }}>
+                {devList.data.filter(d => d.is_truck_factor).length}
+              </span>
+              Truck Factor developers tracked
+              <span
+                className="tf-help"
+                title="Truck Factor Developer: this person has dominant or sole knowledge of critical files. If they leave, that knowledge may be lost and cannot easily be replaced by the remaining team."
+              >?</span>
+              <span style={{ color: "#d0d7de", margin: "0 2px" }}>·</span>
+              <span style={{ fontWeight: 600, color: "#1f2328" }}>{devList.data.length}</span> total
+            </span>
+            <span style={{ fontSize: 12, color: "#57606a" }}>
+              Click a card to simulate departure impact
+            </span>
+          </div>
+          <div className="dev-grid">
+            {devList.data.map(dev => (
+              <DevCard
+                key={dev.dev_id}
+                dev={dev}
+                org={org}
+                repoName={repoName}
+                startDate={dateRange.startDate}
+                endDate={dateRange.endDate}
+                onClick={() => setSelectedDev(dev)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Shell (top bar + tabs + sidebar) ─────────────────────────────────────────
+
+function Shell({ repo, onChangeRepo, children }) {
+  return (
+    <div>
+      {/* top bar */}
+      <div className="topbar">
+        <div className="topbar-logo">
+          <svg height="20" viewBox="0 0 16 16" fill="white">
+            <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38
+              0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95
+              0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27
+              -.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12
+              -.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07
+              -.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53
+              .34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49
+              0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/>
+          </svg>
+          <span>DISTRAC</span>
+        </div>
+        {repo && (
+          <div className="topbar-breadcrumb">
+            <span>{repo.org}</span>
+            <span className="topbar-sep">/</span>
+            <strong>{repo.repo}</strong>
+          </div>
+        )}
+        <div className="topbar-spacer" />
+        {repo && (
+          <button className="btn-link" onClick={onChangeRepo}>← Change repo</button>
+        )}
+      </div>
+
+      {/* body */}
+      <main className="main">{children}</main>
+    </div>
+  );
+}
+
+// ── App root ──────────────────────────────────────────────────────────────────
+
+function App() {
+  const [repo, setRepo] = useState(null);
+
+  return (
+    <Shell repo={repo} onChangeRepo={() => setRepo(null)}>
+      {!repo
+        ? <RepoSelector onSelect={setRepo} />
+        : <Dashboard repo={repo} onChangeRepo={() => setRepo(null)} />
+      }
+    </Shell>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

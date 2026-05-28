@@ -1,0 +1,151 @@
+============================================================
+  TRANSITION DETECTION RATE (TDR) — TEST SET
+============================================================
+  Probability threshold      : 0.3
+  Early-warning window       : 14 days
+  Total INACTIVE periods     : 137
+  Detected periods           : 120
+  Transition Detection Rate  : 87.6%
+  Mean lead time (detected)  : 13.7 days
+  Median lead time           : 14.0 days
+============================================================
+
+Per-period breakdown:
+                     dev period_start period_end  period_length_days  detected  lead_time_days  max_prob_in_window
+David Heinemeier Hansson   2005-05-30 2005-06-01                   3      True            14.0            0.997366
+David Heinemeier Hansson   2006-05-12 2006-05-20                   9      True            14.0            0.996587
+David Heinemeier Hansson   2006-10-05 2006-10-07                   3     False             NaN            0.135110
+David Heinemeier Hansson   2006-12-25 2006-12-26                   2      True            14.0            0.996879
+David Heinemeier Hansson   2007-06-16 2007-06-22                   7      True            14.0            0.996403
+David Heinemeier Hansson   2007-12-30 2007-12-30                   1      True            14.0            0.987030
+David Heinemeier Hansson   2009-01-26 2009-01-26                   1      True            14.0            0.998698
+David Heinemeier Hansson   2009-06-30 2009-11-22                 146      True            14.0            0.421218
+David Heinemeier Hansson   2010-11-29 2010-12-17                  19      True            14.0            0.994390
+David Heinemeier Hansson   2011-09-14 2011-10-12                  29      True            10.0            0.997339
+David Heinemeier Hansson   2015-09-29 2015-10-06                   8      True            14.0            0.999080
+David Heinemeier Hansson   2022-01-12 2022-01-17                   6      True            14.0            0.998859
+David Heinemeier Hansson   2022-02-17 2022-03-31                  43      True            14.0            0.999544
+David Heinemeier Hansson   2022-04-29 2022-05-05                   7      True            14.0            0.999344
+David Heinemeier Hansson   2022-07-20 2022-07-20                   1      True            14.0            0.998726
+David Heinemeier Hansson   2022-08-25 2022-09-06                  13      True            14.0            0.993146
+David Heinemeier Hansson   2022-09-29 2022-10-16                  18      True            14.0            0.999236
+David Heinemeier Hansson   2022-11-08 2022-11-11                   4      True            14.0            0.999093
+David Heinemeier Hansson   2022-12-04 2022-12-05                   2      True            14.0            0.998879
+David Heinemeier Hansson   2023-06-12 2023-07-23                  42      True            14.0            0.996425
+David Heinemeier Hansson   2023-09-12 2023-09-13                   2      True            14.0            0.994040
+David Heinemeier Hansson   2023-09-15 2023-09-15                   1      True            14.0            0.989859
+        MDQ6VXNlcjE5OQ==   2005-07-25 2005-09-25                  63     False             NaN                 NaN
+        MDQ6VXNlcjE5OQ==   2005-12-24 2006-02-08                  47      True            14.0            0.995966
+        MDQ6VXNlcjE5OQ==   2008-09-22 2008-10-05                  14      True            14.0            0.997679
+        MDQ6VXNlcjE5OQ==   2008-10-23 2008-10-23                   1      True            14.0            0.992392
+        MDQ6VXNlcjE5OQ==   2009-07-20 2009-07-28                   9      True            14.0            0.994431
+        MDQ6VXNlcjE5OQ==   2009-10-08 2009-10-09                   2      True            14.0            0.996288
+        MDQ6VXNlcjE5OQ==   2010-01-24 2010-01-25                   2     False             NaN            0.004952
+        MDQ6VXNlcjE5OQ==   2010-05-08 2010-05-14                   7      True            14.0            0.995909
+        MDQ6VXNlcjE5OQ==   2010-06-02 2010-06-04                   3      True            14.0            0.996011
+        MDQ6VXNlcjE5OQ==   2010-10-20 2010-10-25                   6      True            14.0            0.992072
+        MDQ6VXNlcjE5OQ==   2010-12-05 2011-01-07                  34      True            14.0            0.969496
+        MDQ6VXNlcjE5OQ==   2011-02-18 2011-05-16                  88      True            14.0            0.998382
+        MDQ6VXNlcjE5OQ==   2011-05-18 2011-07-18                  62      True            14.0            0.923095
+        MDQ6VXNlcjE5OQ==   2011-07-20 2011-10-02                  75      True            14.0            0.889887
+        MDQ6VXNlcjE5OQ==   2012-06-05 2012-06-20                  16      True            14.0            0.999334
+        MDQ6VXNlcjE5OQ==   2012-07-04 2012-07-04                   1      True            14.0            0.997485
+        MDQ6VXNlcjE5OQ==   2012-07-06 2012-08-02                  28      True            14.0            0.997494
+        MDQ6VXNlcjE5OQ==   2012-08-30 2012-09-10                  12      True            14.0            0.999320
+        MDQ6VXNlcjE5OQ==   2013-07-04 2013-08-05                  33      True            14.0            0.994399
+        MDQ6VXNlcjE5OQ==   2013-09-04 2013-09-07                   4      True            14.0            0.998378
+        MDQ6VXNlcjE5OQ==   2014-01-24 2014-02-08                  16      True            14.0            0.999414
+        MDQ6VXNlcjE5OQ==   2014-12-14 2014-12-18                   5      True            14.0            0.998367
+        MDQ6VXNlcjE5OQ==   2015-01-08 2015-01-09                   2      True            14.0            0.991387
+        MDQ6VXNlcjE5OQ==   2015-05-07 2015-07-13                  68      True            14.0            0.997585
+        MDQ6VXNlcjE5OQ==   2015-07-19 2015-07-21                   3      True            14.0            0.948312
+        MDQ6VXNlcjE5OQ==   2016-06-25 2016-06-27                   3      True            14.0            0.998677
+        MDQ6VXNlcjE5OQ==   2016-08-06 2016-09-20                  46      True            14.0            0.998386
+        MDQ6VXNlcjE5OQ==   2016-11-16 2016-11-16                   1      True            14.0            0.824781
+        MDQ6VXNlcjE5OQ==   2016-12-03 2016-12-05                   3      True            14.0            0.758924
+        MDQ6VXNlcjE5OQ==   2016-12-11 2017-01-19                  40      True            14.0            0.999163
+        MDQ6VXNlcjE5OQ==   2018-07-25 2018-08-04                  11      True            14.0            0.994642
+        MDQ6VXNlcjE5OQ==   2021-04-12 2021-04-13                   2      True            14.0            0.988172
+        MDQ6VXNlcjE5OQ==   2022-03-02 2022-04-01                  31      True            14.0            0.994103
+        MDQ6VXNlcjE5OQ==   2023-02-16 2023-09-06                 203      True            14.0            0.994103
+        MDQ6VXNlcjE5OQ==   2024-07-02 2024-09-18                  79      True            14.0            0.994103
+        MDQ6VXNlcjEzNw==   2010-02-11 2010-02-14                   4     False             NaN            0.004141
+        MDQ6VXNlcjEzNw==   2010-04-24 2011-03-20                 331      True             2.0            0.712375
+        MDQ6VXNlcjEzNw==   2011-06-23 2011-07-06                  14     False             NaN            0.005593
+        MDQ6VXNlcjEzNw==   2011-10-25 2012-03-12                 140      True            14.0            0.999548
+        MDQ6VXNlcjEzNw==   2012-04-07 2012-08-06                 122      True            14.0            0.999607
+        MDQ6VXNlcjEzNw==   2012-08-17 2012-08-21                   5     False             NaN            0.039234
+        MDQ6VXNlcjEzNw==   2012-10-09 2012-10-09                   1      True            14.0            0.750846
+        MDQ6VXNlcjEzNw==   2014-03-19 2014-03-24                   6     False             NaN            0.002460
+        MDQ6VXNlcjMzODc=   2009-06-26 2009-06-27                   2      True            14.0            0.992784
+        MDQ6VXNlcjMzODc=   2015-12-28 2015-12-30                   3      True            12.0            0.317588
+        MDQ6VXNlcjMzODc=   2016-12-29 2017-01-02                   5     False             NaN            0.110020
+        MDQ6VXNlcjMzODc=   2018-01-13 2018-01-21                   9     False             NaN            0.180988
+        MDQ6VXNlcjMzODc=   2019-05-15 2019-05-28                  14      True            14.0            0.998396
+        MDQ6VXNlcjMzODc=   2021-11-22 2021-11-28                   7      True            14.0            0.998707
+        MDQ6VXNlcjMzODc=   2022-04-26 2022-04-30                   5      True            14.0            0.997048
+        MDQ6VXNlcjMzODc=   2022-05-22 2022-05-24                   3      True            14.0            0.986743
+        MDQ6VXNlcjMzODc=   2022-06-12 2022-06-12                   1      True            14.0            0.924122
+        MDQ6VXNlcjMzODc=   2022-06-14 2022-07-27                  44      True            14.0            0.999268
+        MDQ6VXNlcjMzODc=   2022-07-31 2022-08-15                  16      True            14.0            0.998051
+        MDQ6VXNlcjMzODc=   2022-09-03 2022-10-03                  31      True            14.0            0.996622
+        MDQ6VXNlcjMzODc=   2022-10-22 2022-11-21                  31      True            13.0            0.999167
+        MDQ6VXNlcjMzODc=   2024-12-06 2025-04-24                 140      True            14.0            0.998097
+        MDQ6VXNlcjQ3ODQ4   2011-01-13 2011-03-02                  49      True             9.0            0.995631
+        MDQ6VXNlcjQ3ODQ4   2011-09-06 2011-10-12                  37      True            14.0            0.993509
+        MDQ6VXNlcjQ3ODQ4   2013-12-21 2013-12-22                   2      True            14.0            0.925931
+        MDQ6VXNlcjQ3ODQ4   2014-02-20 2014-02-25                   6      True            14.0            0.998935
+        MDQ6VXNlcjQ3ODQ4   2014-03-05 2014-03-07                   3      True            14.0            0.998416
+        MDQ6VXNlcjQ3ODQ4   2016-08-30 2016-09-11                  13      True            14.0            0.997444
+        MDQ6VXNlcjQ3ODQ4   2017-01-21 2017-01-26                   6      True            13.0            0.930226
+        MDQ6VXNlcjQ3ODQ4   2017-09-04 2017-10-03                  30      True             8.0            0.990492
+        MDQ6VXNlcjQ3ODQ4   2018-01-08 2018-01-09                   2     False             NaN            0.291801
+        MDQ6VXNlcjQ3ODQ4   2018-08-16 2018-08-19                   4     False             NaN            0.149901
+        MDQ6VXNlcjQ3ODQ4   2019-07-14 2019-07-14                   1      True            14.0            0.997295
+        MDQ6VXNlcjQ3ODQ4   2019-08-31 2019-09-03                   4      True            14.0            0.998752
+        MDQ6VXNlcjQ3ODQ4   2021-05-13 2021-06-01                  20      True            14.0            0.998779
+        MDQ6VXNlcjQ3ODQ4   2022-03-29 2022-03-30                   2      True            14.0            0.702243
+        MDQ6VXNlcjQ3ODQ4   2022-05-02 2022-05-10                   9      True            14.0            0.998121
+        MDQ6VXNlcjQ3ODQ4   2023-04-07 2023-04-09                   3      True            14.0            0.998356
+        MDQ6VXNlcjQ3ODQ4   2023-09-16 2023-09-18                   3      True            14.0            0.999086
+        MDQ6VXNlcjQ3ODQ4   2023-11-04 2023-11-06                   3      True            14.0            0.998493
+        MDQ6VXNlcjQ3ODQ4   2024-07-07 2024-07-07                   1      True            14.0            0.936700
+        MDQ6VXNlcjQ3ODQ4   2024-11-29 2024-12-01                   3      True            14.0            0.909227
+        MDQ6VXNlcjQ3ODQ4   2025-02-10 2025-02-13                   4      True            14.0            0.943596
+        MDQ6VXNlcjQ3ODQ4   2025-03-22 2025-05-05                  45      True            14.0            0.997322
+        MDQ6VXNlcjQ3ODQ4   2025-05-28 2025-07-16                  50      True            14.0            0.999475
+        MDQ6VXNlcjQ3ODQ4   2025-11-06 2025-11-06                   1     False             NaN            0.013401
+        MDQ6VXNlcjQ3ODQ4   2025-11-17 2025-11-18                   2      True            14.0            0.996618
+        MDQ6VXNlcjQ3ODQ4   2025-11-30 2025-12-04                   5      True            14.0            0.998419
+        MDQ6VXNlcjQ3ODQ4   2025-12-18 2026-01-05                  19      True            14.0            0.996406
+        MDQ6VXNlcjUwMDQ=   2011-01-01 2011-02-08                  39     False             NaN            0.024262
+        MDQ6VXNlcjUwMDQ=   2011-02-10 2011-03-21                  40      True            14.0            0.993357
+        MDQ6VXNlcjUwMDQ=   2011-09-08 2011-11-22                  76      True            14.0            0.994578
+        MDQ6VXNlcjUwMDQ=   2012-11-05 2012-11-06                   2      True            14.0            0.996700
+        MDQ6VXNlcjUwMDQ=   2013-03-21 2013-04-15                  26      True            14.0            0.978759
+        MDQ6VXNlcjY2NTM=   2008-06-22 2008-06-28                   7      True            14.0            0.998089
+        MDQ6VXNlcjY2NTM=   2008-08-30 2008-09-13                  15      True            14.0            0.689878
+        MDQ6VXNlcjY2NTM=   2010-05-07 2010-06-10                  35      True            14.0            0.995005
+        MDQ6VXNlcjk0MTI5   2013-03-11 2013-12-11                 276      True             3.0            0.995535
+        MDQ6VXNlcjk0MTI5   2015-06-11 2015-08-08                  59     False             NaN            0.020655
+        MDQ6VXNlcjk0MTI5   2015-11-10 2016-06-03                 207      True            14.0            0.995049
+        MDQ6VXNlcjk0MTI5   2017-09-08 2017-09-10                   3      True            14.0            0.999096
+        MDQ6VXNlcjk0MTI5   2018-06-11 2018-06-12                   2      True            14.0            0.982586
+        MDQ6VXNlcjk0MTI5   2019-04-27 2019-04-29                   3      True            14.0            0.993127
+        MDQ6VXNlcjk0MTI5   2019-06-01 2019-06-01                   1      True            14.0            0.983807
+        MDQ6VXNlcjk0MTI5   2019-06-13 2019-06-22                  10      True            14.0            0.997358
+        MDQ6VXNlcjk1ODI=   2008-10-21 2009-01-17                  89     False             NaN            0.000155
+        MDQ6VXNlcjk1ODI=   2009-08-24 2009-08-28                   5      True            14.0            0.324187
+        MDQ6VXNlcjk1ODI=   2014-04-23 2014-05-07                  15     False             NaN            0.000152
+        MDQ6VXNlcjk1ODI=   2014-06-15 2014-07-01                  17     False             NaN            0.000154
+            MDQ6VXNlcjkx   2010-08-20 2010-08-29                  10      True            14.0            0.990793
+            MDQ6VXNlcjkx   2010-10-11 2010-11-01                  22      True            14.0            0.994607
+            MDQ6VXNlcjkx   2010-12-07 2010-12-28                  22      True            14.0            0.992577
+            MDQ6VXNlcjkx   2011-03-07 2011-03-24                  18      True            14.0            0.983507
+            MDQ6VXNlcjkx   2011-04-29 2011-10-25                 180      True            14.0            0.990252
+            MDQ6VXNlcjkx   2011-11-30 2012-08-19                 264      True            14.0            0.992873
+            MDQ6VXNlcjkx   2012-10-05 2013-08-31                 331      True            14.0            0.469892
+            MDQ6VXNlcjkx   2015-09-19 2015-10-06                  18      True            14.0            0.992467
+            MDQ6VXNlcjkx   2015-12-13 2016-01-15                  34      True            14.0            0.997597
+            MDQ6VXNlcjkx   2016-02-21 2016-02-21                   1      True            14.0            0.998680
+            MDQ6VXNlcjkx   2016-03-05 2017-03-04                 365      True            14.0            0.997605
