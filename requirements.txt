@@ -1,0 +1,35 @@
+# GitHub API
+PyGithub>=2.0
+
+# Data processing
+pandas
+numpy
+python-dateutil
+pyarrow
+
+# Analysis / metrics
+networkx
+truckfactor
+scikit-learn
+xgboost
+joblib
+
+# Deep learning (used in DemoAppV2.2 / DemoAppV2.3 prediction pipeline)
+torch
+
+# Visualization
+matplotlib
+
+# Web / dashboard
+streamlit
+fastapi
+uvicorn[standard]
+
+# Utilities
+tqdm
+portalocker
+requests
+GitPython
+
+# Hugging Face (dataset storage for cloud deployment)
+huggingface_hub

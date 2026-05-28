@@ -1,16 +1,20 @@
-#Tokens
+# Tokens
 tokens.txt
 
-#Results
+# Generated results and large data
 Organizations/
 logs/
-Resources/
 TF_Results/
 A80_Results/
 A80MOD_Results/
 A80API_Results/
 Local_Repositories/
 TRASH/
+
+# Sensitive config (keep repositories.txt but not tokens)
+Resources/tokens.txt
+Resources/tokens.csv
+Resources/tokens.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -87,6 +91,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+*.ipynb
 
 # IPython
 profile_default/
@@ -133,13 +138,21 @@ dmypy.json
 
 # VSCode
 .vscode/
+
+# JSON (tokens, generated output) — package.json is tracked and unaffected
 *.json
+
+# CSV data files
 *.csv
-/Test
-Extractors/test.ipynb
-test.ipynb
-Extractors/Backup/test - Copy 2.ipynb
-Extractors/Backup/test - Copy.ipynb
-*.csv
-*.csv
+!Resources/repo_split.csv
+
+# Generated reports
+tdr_report.txt
+
+# node_modules (regenerate with npm install)
 /node_modules
+package-lock.json
+
+# Development scratch folders
+/Test
+Dashboard/Dashbord_devlopment/

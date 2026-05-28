@@ -161,3 +161,8 @@ social_technical_daily_interactions_file = "daily_interactions.csv"
 social_technical_nodes_file = "stn_nodes.csv"
 social_technical_links_file = "stn_links.csv"
 social_technical_html_file  = "stn_network.html"
+
+# Hugging Face deployment — set via environment variables in production
+import os as _os
+USE_HF_STORAGE  = _os.environ.get("USE_HF_STORAGE",  "false").lower() == "true"
+HF_DATASET_REPO = _os.environ.get("HF_DATASET_REPO", "Coupur/distrack-data")
