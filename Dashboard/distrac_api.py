@@ -33,11 +33,15 @@ def _resolve_file(local_path: Path) -> Path:
     if not cfg.USE_HF_STORAGE:
         return local_path
     try:
-        rel = local_path.relative_to(ROOT)
+        rel = local_path.relative_to(ROOT).as_posix()
+        # The dataset was uploaded from ./Organizations, so the root in HF
+        # is the org level — strip the "Organizations/" prefix.
+        if rel.startswith("Organizations/"):
+            rel = rel[len("Organizations/"):]
         from huggingface_hub import hf_hub_download
         return Path(hf_hub_download(
             repo_id=cfg.HF_DATASET_REPO,
-            filename=rel.as_posix(),
+            filename=rel,
             repo_type="dataset",
         ))
     except Exception:
