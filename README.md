@@ -5,8 +5,10 @@ colorFrom: blue
 colorTo: indigo
 sdk: docker
 pinned: false
+license: mit
 ---
 
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
 # Distrack — Developer Disengagement Tracking Tool
 
 [![DOI](https://zenodo.org/badge/183011533.svg)](https://zenodo.org/badge/latestdoi/183011533)
