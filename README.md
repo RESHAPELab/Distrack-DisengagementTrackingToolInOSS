@@ -11,7 +11,7 @@ license: mit
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
 # Distrack — Developer Disengagement Tracking Tool
 
-[![DOI](https://zenodo.org/badge/183011533.svg)](https://zenodo.org/badge/latestdoi/183011533)
+[![DOI](10.5281/zenodo.20435458)](https://https://zenodo.org/records/20435459)
 
 Distrack is a research tool for extracting, analyzing, and visualizing developer activity in open-source software (OSS) projects on GitHub. It identifies disengagement patterns, computes project health metrics, and trains predictive models to flag developers at risk of leaving a project.
 
