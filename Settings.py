@@ -165,4 +165,4 @@ social_technical_html_file  = "stn_network.html"
 # Hugging Face deployment — set via environment variables in production
 import os as _os
 USE_HF_STORAGE  = _os.environ.get("USE_HF_STORAGE",  "false").lower() == "true"
-HF_DATASET_REPO = _os.environ.get("HF_DATASET_REPO", "Coupur/distrack-data")
+HF_DATASET_REPO = _os.environ.get("HF_DATASET_REPO", "SamUtz1/distrack-data")
